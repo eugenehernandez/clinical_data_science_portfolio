@@ -1,0 +1,651 @@
+---
+title: "From SDTM to ADaM: A Clinical Data Transformation Walkthrough"
+author: "Eugene Hernandez"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 3
+    theme: flatly
+    highlight: tango
+    code_folding: show
+    df_print: kable
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo    = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  fig.width  = 9,
+  fig.height = 5.5
+)
+```
+
+---
+
+## Overview
+
+A hands-on walkthrough of the SDTM-to-ADaM pipeline using simulated clinical trial
+data. I built this while working through the CDISC ADaM IG to get comfortable with
+the derivation conventions before applying them to real study data.
+
+**Study:** Two-arm RCT, Drug A 10 mg vs. Placebo, 12-week hypertension trial.
+Primary endpoint: change from baseline in systolic blood pressure at Week 12.
+
+**Inputs:** DM (Demographics) + VS (Vital Signs) — both simulated to SDTM v3.4 conventions.
+
+**Outputs:** ADSL (subject-level) derived from DM; ADVS (BDS structure) derived from ADSL + VS.
+
+**Packages:** `dplyr`, `lubridate`, `ggplot2`, `gtsummary`, `kableExtra`
+
+---
+
+## 1. Setup
+
+```{r packages}
+library(dplyr)
+library(tidyr)
+library(lubridate)
+library(ggplot2)
+library(gtsummary)
+library(kableExtra)
+
+# Consistent ggplot theme for all figures
+theme_set(
+  theme_bw(base_size = 12) +
+    theme(
+      panel.grid.minor  = element_blank(),
+      strip.background  = element_rect(fill = "#EBF2FB"),
+      strip.text        = element_text(face = "bold"),
+      legend.position   = "bottom"
+    )
+)
+```
+
+---
+
+## 2. Simulate SDTM Source Data
+
+In practice these would come in as `.xpt` files read via `haven`. Simulating
+here to keep everything self-contained.
+
+All variable names and terminology follow **CDISC SDTM IG v3.4**.
+
+### 2.1 DM — Demographics
+
+```{r simulate-dm}
+set.seed(2024)
+
+n <- 60  # 30 per arm
+
+dm <- tibble(
+  STUDYID  = "STUDY-001",
+  USUBJID  = sprintf("STUDY-001-001-%03d", seq_len(n)),
+  SUBJID   = sprintf("%03d", seq_len(n)),
+  AGE      = as.integer(round(runif(n, 35, 75))),
+  AGEU     = "YEARS",
+  SEX      = sample(c("M", "F"), n, replace = TRUE, prob = c(0.48, 0.52)),
+  RACE     = sample(
+    c("WHITE", "BLACK OR AFRICAN AMERICAN", "ASIAN", "OTHER"),
+    n, replace = TRUE, prob = c(0.60, 0.20, 0.15, 0.05)
+  ),
+  # Alternate treatment assignment (simulating blocked randomization)
+  ARMCD    = rep(c("DRUGA", "PBO"), length.out = n),
+  ARM      = if_else(ARMCD == "DRUGA", "Drug A 10mg", "Placebo"),
+  ACTARMCD = ARMCD,     # No protocol deviations in this clean simulation
+  ACTARM   = ARM,
+  # Reference start date: first dose date (ISO 8601 character, per SDTM)
+  RFSTDTC  = format(
+    as.Date("2023-01-10") + days(sample(0:60, n, replace = TRUE)),
+    "%Y-%m-%d"
+  )
+) %>%
+  mutate(
+    # End date: 12 weeks (84 days) after first dose
+    RFENDTC = format(as.Date(RFSTDTC) + days(84), "%Y-%m-%d"),
+    DMDTC   = format(as.Date(RFSTDTC) - days(7),  "%Y-%m-%d")  # Consent 7 days prior
+  )
+
+# Preview
+dm %>%
+  select(USUBJID, AGE, SEX, RACE, ARM, RFSTDTC, RFENDTC) %>%
+  head(8) %>%
+  kbl(caption = "DM Domain — first 8 rows") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE)
+```
+
+### 2.2 VS — Vital Signs
+
+Measurements are collected at four scheduled visits. `VSBLFL = "Y"` flags the
+Baseline visit as the reference for change-from-baseline derivations in ADaM.
+
+```{r simulate-vs}
+# Visit schedule
+visits <- tibble(
+  VISITNUM = c(1,  2,  3,  4),
+  VISIT    = c("Screening", "Baseline", "Week 4", "Week 12"),
+  VSDY     = c(-7,  1,  29, 85),  # Study day relative to RFSTDTC; no day 0
+  VSBLFL   = c("",  "Y", "",  "")
+)
+
+# Parameters to collect
+params <- tibble(
+  VSTESTCD = c("SYSBP",                   "DIABP",                    "PULSE"),
+  VSTEST   = c("Systolic Blood Pressure",  "Diastolic Blood Pressure", "Pulse Rate"),
+  VSSTRESU = c("mmHg",                     "mmHg",                     "beats/min"),
+  # Baseline mean by treatment arm (Drug A, Placebo)
+  base_mean_drug  = c(148, 93, 78),
+  base_mean_pbo   = c(147, 92, 77),
+  # True treatment effects vs placebo at each post-baseline visit
+  effect_wk4      = c(-8,  -4,  -3),   # Drug A additional reduction at Week 4
+  effect_wk12     = c(-12, -5,  -4),   # Drug A additional reduction at Week 12
+  sd_within       = c(10,   7,   8)    # Within-subject SD
+)
+
+# Generate one row per subject × visit × parameter
+vs_raw <- crossing(USUBJID = dm$USUBJID, VISITNUM = visits$VISITNUM, VSTESTCD = params$VSTESTCD) %>%
+  left_join(dm %>% select(USUBJID, ARMCD, RFSTDTC), by = "USUBJID") %>%
+  left_join(visits,  by = "VISITNUM") %>%
+  left_join(params,  by = "VSTESTCD") %>%
+  mutate(
+    base_mean = if_else(ARMCD == "DRUGA", base_mean_drug, base_mean_pbo),
+    # Between-subject random effect — kept consistent across visits for same subject
+    rand_subj = rnorm(n(), 0, 5),
+    trt_effect = case_when(
+      ARMCD != "DRUGA"   ~ 0,
+      VISITNUM == 3      ~ effect_wk4,
+      VISITNUM == 4      ~ effect_wk12,
+      TRUE               ~ 0
+    ),
+    # Small placebo drift (regression to mean)
+    pbo_drift = case_when(
+      VISITNUM == 3 ~ -2,
+      VISITNUM == 4 ~ -3,
+      TRUE          ~ 0
+    ),
+    VSSTRESN = round(
+      base_mean + rand_subj + trt_effect + pbo_drift + rnorm(n(), 0, sd_within), 1
+    ),
+    VSSTRESC = as.character(VSSTRESN),
+    VSORRES  = VSSTRESC,
+    VSORRESU = VSSTRESU,
+    # Derive collection date from RFSTDTC + study day offset
+    VSDTC    = format(as.Date(RFSTDTC) + days(VSDY - 1), "%Y-%m-%d"),
+    VSSEQ    = row_number(),
+    STUDYID  = "STUDY-001"
+  ) %>%
+  select(STUDYID, USUBJID, VSSEQ, VSTESTCD, VSTEST, VSORRES, VSORRESU,
+         VSSTRESC, VSSTRESN, VSSTRESU, VSBLFL, VISITNUM, VISIT, VSDTC, VSDY)
+
+cat("VS domain dimensions:", nrow(vs_raw), "rows ×", ncol(vs_raw), "columns\n")
+cat("Subjects:", n_distinct(vs_raw$USUBJID), "\n")
+cat("Visits:", n_distinct(vs_raw$VISIT), "\n")
+cat("Parameters:", n_distinct(vs_raw$VSTESTCD), "\n")
+
+vs_raw %>%
+  filter(VSTESTCD == "SYSBP") %>%
+  select(USUBJID, VISIT, VSBLFL, VSSTRESN, VSSTRESU, VSDTC, VSDY) %>%
+  head(8) %>%
+  kbl(caption = "VS Domain — SYSBP, first 8 rows") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE)
+```
+
+---
+
+## 3. Build ADSL — Subject-Level Analysis Dataset
+
+ADSL has to be locked before anything downstream can be built — it's the
+source of TRTSDT, population flags, and treatment arm codes that every BDS
+dataset inherits via merge.
+
+Per ADaM IG: flag variables (`_FL`) are `"Y"` or blank, **never `"N"`**.
+Numeric companion variables (`_N`) always accompany character categoricals.
+
+```{r build-adsl}
+adsl <- dm %>%
+  mutate(
+    # --- Age group: protocol-defined cut-points ---
+    AGEGR1  = case_when(
+      AGE < 50          ~ "<50",
+      AGE >= 50 & AGE < 65 ~ "50-64",
+      AGE >= 65         ~ ">=65"
+    ),
+    AGEGR1N = case_when(
+      AGEGR1 == "<50"   ~ 1L,
+      AGEGR1 == "50-64" ~ 2L,
+      AGEGR1 == ">=65"  ~ 3L
+    ),
+
+    # --- Numeric companion for SEX ---
+    SEXN = case_when(
+      SEX == "F" ~ 1L,
+      SEX == "M" ~ 2L,
+      TRUE       ~ 3L
+    ),
+
+    # --- Numeric companion for RACE ---
+    RACEN = case_when(
+      RACE == "WHITE"                       ~ 1L,
+      RACE == "BLACK OR AFRICAN AMERICAN"   ~ 2L,
+      RACE == "ASIAN"                       ~ 3L,
+      TRUE                                  ~ 4L
+    ),
+
+    # --- Planned treatment variables (Period 1) ---
+    TRT01P  = ARM,
+    TRT01PN = if_else(ARMCD == "DRUGA", 1L, 2L),
+    TRT01A  = ACTARM,
+    TRT01AN = if_else(ACTARMCD == "DRUGA", 1L, 2L),
+
+    # ISO 8601 character → R Date (SDTM stores dates as strings)
+    TRTSDT = ymd(RFSTDTC),
+    TRTEDT = ymd(RFENDTC),
+
+    # --- Population flags ---
+    # SAFFL: received at least one dose (TRTSDT is not missing)
+    SAFFL  = if_else(!is.na(TRTSDT), "Y", ""),
+    # ITTFL: was randomized (ARM is not missing)
+    ITTFL  = if_else(!is.na(ARM), "Y", ""),
+    # PPROTFL: no major protocol deviations (all subjects here)
+    PPROTFL = if_else(ITTFL == "Y", "Y", "")
+  ) %>%
+  select(
+    STUDYID, USUBJID, SUBJID,
+    AGE, AGEU, AGEGR1, AGEGR1N,
+    SEX, SEXN, RACE, RACEN,
+    TRT01P, TRT01PN, TRT01A, TRT01AN,
+    TRTSDT, TRTEDT,
+    SAFFL, ITTFL, PPROTFL
+  )
+
+cat("ADSL dimensions:", nrow(adsl), "rows ×", ncol(adsl), "columns\n")
+cat("Population counts — SAFFL='Y':", sum(adsl$SAFFL == "Y"),
+    "| ITTFL='Y':", sum(adsl$ITTFL == "Y"), "\n")
+
+adsl %>%
+  select(USUBJID, AGE, AGEGR1, SEX, RACE, TRT01P, TRTSDT, SAFFL, ITTFL) %>%
+  head(8) %>%
+  kbl(caption = "ADSL — first 8 rows") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE)
+```
+
+---
+
+## 4. Build ADVS — Vital Signs Analysis Dataset (BDS)
+
+BDS structure: one row per subject × parameter × timepoint. The tricky part
+is BASE — it has to be derived by pulling AVAL where `ABLFL = "Y"` and then
+joining it back to all rows for that subject × parameter combination.
+Easy to get wrong if you try to do it in a single pass.
+
+| Variable | Derivation |
+|----------|-----------|
+| AVAL     | = VSSTRESN |
+| ADT      | = as.Date(VSDTC) |
+| ADY      | = ADT − TRTSDT + 1 (post); ADT − TRTSDT (pre). No day 0. |
+| BASE     | = AVAL where ABLFL = "Y", propagated across all rows |
+| CHG      | = AVAL − BASE (post-baseline only) |
+| PCHG     | = CHG / BASE × 100 |
+| ANL01FL  | = "Y" for post-baseline observed records in safety population |
+
+```{r build-advs}
+# Step 1: Merge VS with ADSL to bring in TRTSDT and subject-level variables
+advs_step1 <- vs_raw %>%
+  left_join(
+    adsl %>% select(USUBJID, TRTSDT, TRT01P, TRT01PN, TRT01A, TRT01AN,
+                    AGE, AGEGR1, AGEGR1N, SEX, SEXN, RACE, RACEN,
+                    SAFFL, ITTFL),
+    by = "USUBJID"
+  ) %>%
+  mutate(
+    # --- Core ADaM BDS variables ---
+    PARAMCD = VSTESTCD,
+    PARAM   = paste0(VSTEST, " (", VSSTRESU, ")"),
+    AVAL    = VSSTRESN,
+    AVALC   = if_else(!is.na(VSSTRESN), as.character(VSSTRESN), VSSTRESC),
+
+    # --- Date and study day ---
+    ADT  = ymd(VSDTC),
+    # ADY: no day 0 per CDISC convention
+    ADY  = if_else(
+      ADT >= TRTSDT,
+      as.integer(ADT - TRTSDT) + 1L,
+      as.integer(ADT - TRTSDT)
+    ),
+
+    # --- Baseline flag ---
+    ABLFL = VSBLFL,   # "Y" at Baseline visit, "" elsewhere
+
+    # --- Analysis visit ---
+    AVISIT  = VISIT,
+    AVISITN = VISITNUM,
+
+    # --- DTYPE: blank for all observed records (no imputation in this vignette) ---
+    DTYPE = ""
+  )
+
+# Step 2: Derive BASE by joining baseline AVAL back to all rows
+# Easy to miss this — BASE has to be a join, not computed in the same mutate pass
+baseline_vals <- advs_step1 %>%
+  filter(ABLFL == "Y") %>%
+  select(USUBJID, PARAMCD, BASE = AVAL)
+
+advs <- advs_step1 %>%
+  left_join(baseline_vals, by = c("USUBJID", "PARAMCD")) %>%
+  mutate(
+    # --- Change from baseline (post-baseline rows only) ---
+    CHG  = if_else(ABLFL != "Y" & AVISITN > 1, AVAL - BASE, NA_real_),
+    PCHG = if_else(!is.na(CHG) & BASE != 0, CHG / BASE * 100, NA_real_),
+
+    # --- Primary analysis flag: post-baseline, observed, safety population ---
+    ANL01FL = if_else(
+      ABLFL != "Y" & AVISITN > 1 & DTYPE == "" & SAFFL == "Y",
+      "Y", ""
+    )
+  ) %>%
+  select(
+    STUDYID, USUBJID,
+    PARAMCD, PARAM,
+    AVAL, AVALC, ABLFL, BASE, CHG, PCHG, DTYPE,
+    ADT, ADY, AVISIT, AVISITN, ANL01FL,
+    TRT01P, TRT01PN, TRT01A, TRT01AN,
+    AGE, AGEGR1, AGEGR1N, SEX, SEXN, RACE, RACEN,
+    SAFFL, ITTFL
+  ) %>%
+  arrange(USUBJID, PARAMCD, AVISITN)
+
+cat("ADVS dimensions:", nrow(advs), "rows ×", ncol(advs), "columns\n")
+cat("Parameters:", paste(unique(advs$PARAMCD), collapse = ", "), "\n")
+cat("Visits:", paste(unique(advs$AVISIT), collapse = ", "), "\n")
+cat("ANL01FL='Y' rows:", sum(advs$ANL01FL == "Y"), "\n")
+
+advs %>%
+  filter(PARAMCD == "SYSBP", USUBJID %in% head(unique(USUBJID), 2)) %>%
+  select(USUBJID, TRT01P, AVISIT, AVAL, BASE, CHG, PCHG, ABLFL, ANL01FL) %>%
+  kbl(caption = "ADVS — SYSBP for two subjects across visits", digits = 1) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE)
+```
+
+---
+
+## 5. Validation Checks
+
+Six structural checks before doing any analysis. These are the kinds of things
+that bite you later if you skip them.
+
+```{r validation}
+checks <- list(
+
+  # 1. ADSL: one row per subject
+  adsl_unique = nrow(adsl) == n_distinct(adsl$USUBJID),
+
+  # 2. ADVS: no orphaned subjects (every ADVS subject must be in ADSL)
+  no_orphans  = all(advs$USUBJID %in% adsl$USUBJID),
+
+  # 3. BASE is identical for all rows of the same subject × parameter
+  base_consistent = advs %>%
+    filter(!is.na(BASE)) %>%
+    group_by(USUBJID, PARAMCD) %>%
+    summarise(n_base = n_distinct(BASE), .groups = "drop") %>%
+    pull(n_base) %>% max() == 1,
+
+  # 4. CHG is missing on baseline rows (ABLFL = "Y")
+  chg_na_at_baseline = advs %>%
+    filter(ABLFL == "Y") %>%
+    pull(CHG) %>% is.na() %>% all(),
+
+  # 5. ADY: no subject has a day-0 study day
+  no_day_zero = !any(advs$ADY == 0, na.rm = TRUE),
+
+  # 6. Flag variables contain only "Y" or "" (never "N")
+  flags_valid = all(adsl$SAFFL %in% c("Y", "")) &
+                all(adsl$ITTFL %in% c("Y", "")) &
+                all(advs$ABLFL %in% c("Y", ""))  &
+                all(advs$ANL01FL %in% c("Y", ""))
+)
+
+tibble(
+  Check   = names(checks),
+  Result  = if_else(unlist(checks), "PASS ✓", "FAIL ✗"),
+  Detail  = c(
+    "One row per subject in ADSL",
+    "All ADVS subjects present in ADSL",
+    "BASE value is consistent within USUBJID × PARAMCD",
+    "CHG is NA on ABLFL = 'Y' rows",
+    "No ADY = 0 exists (CDISC convention: no day zero)",
+    "All flag variables contain only 'Y' or blank"
+  )
+) %>%
+  kbl(caption = "ADaM QC Validation Checks") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE) %>%
+  column_spec(2, color = if_else(unlist(checks), "darkgreen", "red"), bold = TRUE)
+```
+
+---
+
+## 6. Demographic Summary (Table 1)
+
+ITT population. Standard first exhibit in any CSR.
+
+```{r table1}
+adsl %>%
+  filter(ITTFL == "Y") %>%
+  select(AGE, AGEGR1, SEX, RACE, TRT01P) %>%
+  tbl_summary(
+    by      = TRT01P,
+    label   = list(
+      AGE    ~ "Age (years)",
+      AGEGR1 ~ "Age group",
+      SEX    ~ "Sex",
+      RACE   ~ "Race"
+    ),
+    statistic = list(
+      all_continuous()  ~ "{mean} ({sd})",
+      all_categorical() ~ "{n} ({p}%)"
+    ),
+    digits = all_continuous() ~ 1
+  ) %>%
+  add_overall() %>%
+  add_n() %>%
+  bold_labels() %>%
+  modify_caption("**Table 1. Baseline Demographics — ITT Population**")
+```
+
+---
+
+## 7. Baseline SBP Distribution
+
+Confirming arms are balanced before looking at change from baseline.
+
+```{r fig-baseline, fig.cap="Figure 1. Distribution of Baseline Systolic Blood Pressure by Treatment Arm"}
+advs %>%
+  filter(PARAMCD == "SYSBP", ABLFL == "Y", SAFFL == "Y") %>%
+  ggplot(aes(x = TRT01P, y = AVAL, fill = TRT01P)) +
+  geom_boxplot(width = 0.45, outlier.shape = 21, outlier.size = 2, alpha = 0.7) +
+  geom_jitter(aes(color = TRT01P), width = 0.12, alpha = 0.4, size = 1.5) +
+  scale_fill_manual(values  = c("Drug A 10mg" = "#1B5E9E", "Placebo" = "#7A7A7A")) +
+  scale_color_manual(values = c("Drug A 10mg" = "#1B5E9E", "Placebo" = "#7A7A7A")) +
+  labs(
+    title    = "Baseline Systolic Blood Pressure by Treatment Arm",
+    subtitle = "Safety population (SAFFL = 'Y') · Baseline visit (ABLFL = 'Y')",
+    x        = "Treatment Arm",
+    y        = "Systolic Blood Pressure (mmHg)",
+    fill     = NULL,
+    color    = NULL
+  ) +
+  guides(fill = "none", color = "none")
+```
+
+---
+
+## 8. Change from Baseline in SBP Over Time
+
+Mean CFB ± 95% CI by visit and arm. Primary analysis window: `ANL01FL = "Y"`.
+
+```{r fig-cfb, fig.cap="Figure 2. Mean Change from Baseline in Systolic BP by Visit and Treatment Arm (± 95% CI)"}
+# Summary statistics for the primary analysis window (ANL01FL = "Y")
+cfb_summary <- advs %>%
+  filter(PARAMCD == "SYSBP", ANL01FL == "Y") %>%
+  group_by(TRT01P, TRT01PN, AVISIT, AVISITN) %>%
+  summarise(
+    n    = n(),
+    mean = mean(CHG, na.rm = TRUE),
+    se   = sd(CHG, na.rm = TRUE) / sqrt(n()),
+    ci_l = mean - qt(0.975, df = n - 1) * se,
+    ci_u = mean + qt(0.975, df = n - 1) * se,
+    .groups = "drop"
+  ) %>%
+  mutate(
+    AVISIT = factor(AVISIT, levels = c("Week 4", "Week 12"))
+  )
+
+ggplot(cfb_summary,
+       aes(x = AVISIT, y = mean,
+           color = TRT01P, group = TRT01P,
+           shape = TRT01P)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray60", linewidth = 0.5) +
+  geom_errorbar(aes(ymin = ci_l, ymax = ci_u),
+                width = 0.12, linewidth = 0.8,
+                position = position_dodge(width = 0.25)) +
+  geom_line(linewidth = 1.0, position = position_dodge(width = 0.25)) +
+  geom_point(size = 4, position = position_dodge(width = 0.25)) +
+  geom_label(
+    aes(label = sprintf("%.1f\n(n=%d)", mean, n)),
+    position = position_dodge(width = 0.25),
+    vjust = -0.8, size = 3, label.size = 0.3,
+    show.legend = FALSE
+  ) +
+  scale_color_manual(values = c("Drug A 10mg" = "#1B5E9E", "Placebo" = "#7A7A7A")) +
+  scale_shape_manual(values = c("Drug A 10mg" = 16, "Placebo" = 17)) +
+  scale_y_continuous(
+    limits = c(-22, 4),
+    breaks = seq(-20, 4, by = 4)
+  ) +
+  labs(
+    title    = "Change from Baseline in Systolic Blood Pressure",
+    subtitle = "Primary analysis population (ANL01FL = 'Y') · Mean ± 95% CI",
+    x        = "Study Visit",
+    y        = "Change from Baseline (mmHg)",
+    color    = "Treatment Arm",
+    shape    = "Treatment Arm"
+  )
+```
+
+---
+
+## 9. Treatment Difference at Week 12
+
+```{r treatment-difference}
+# Extract Week 12 individual records for the primary analysis
+wk12 <- advs %>%
+  filter(PARAMCD == "SYSBP", ANL01FL == "Y", AVISIT == "Week 12")
+
+# Two-sample t-test: Drug A vs Placebo change from baseline
+drug_chg <- wk12 %>% filter(TRT01P == "Drug A 10mg") %>% pull(CHG)
+pbo_chg  <- wk12 %>% filter(TRT01P == "Placebo")     %>% pull(CHG)
+
+ttest_res <- t.test(drug_chg, pbo_chg, var.equal = FALSE)
+
+tibble(
+  ` `              = c("Drug A 10mg", "Placebo", "Difference (Drug A − Placebo)"),
+  N                = c(length(drug_chg), length(pbo_chg), NA_integer_),
+  `Mean CFB (mmHg)`= c(mean(drug_chg), mean(pbo_chg),
+                        mean(drug_chg) - mean(pbo_chg)),
+  `SD`             = c(sd(drug_chg), sd(pbo_chg), NA_real_),
+  `95% CI (lower)` = c(NA, NA, ttest_res$conf.int[1]),
+  `95% CI (upper)` = c(NA, NA, ttest_res$conf.int[2]),
+  `p-value`        = c(NA, NA, ttest_res$p.value)
+) %>%
+  kbl(
+    caption = "Table 2. Treatment Difference in SBP Change from Baseline at Week 12",
+    digits  = c(0, 0, 1, 1, 1, 1, 4)
+  ) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE) %>%
+  row_spec(3, bold = TRUE, background = "#EBF2FB")
+```
+
+---
+
+## 10. Subgroup Analysis by Age Group
+
+Checking consistency of the treatment effect across age subgroups at Week 12.
+
+```{r fig-subgroup, fig.cap="Figure 3. Treatment Difference in SBP Change from Baseline at Week 12 by Age Group"}
+subgroup_summary <- advs %>%
+  filter(PARAMCD == "SYSBP", ANL01FL == "Y", AVISIT == "Week 12") %>%
+  group_by(AGEGR1, AGEGR1N, TRT01P, TRT01PN) %>%
+  summarise(
+    n    = n(),
+    mean = mean(CHG, na.rm = TRUE),
+    se   = sd(CHG,  na.rm = TRUE) / sqrt(n()),
+    ci_l = mean - qt(0.975, df = n - 1) * se,
+    ci_u = mean + qt(0.975, df = n - 1) * se,
+    .groups = "drop"
+  ) %>%
+  mutate(AGEGR1 = factor(AGEGR1, levels = c("<50", "50-64", ">=65")))
+
+ggplot(subgroup_summary,
+       aes(x = AGEGR1, y = mean,
+           color = TRT01P, group = TRT01P,
+           shape = TRT01P)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray60", linewidth = 0.5) +
+  geom_errorbar(aes(ymin = ci_l, ymax = ci_u),
+                width = 0.15, linewidth = 0.8,
+                position = position_dodge(width = 0.4)) +
+  geom_point(size = 4, position = position_dodge(width = 0.4)) +
+  geom_text(
+    aes(label = sprintf("n=%d", n)),
+    position = position_dodge(width = 0.4),
+    vjust = -1.5, size = 3, show.legend = FALSE
+  ) +
+  scale_color_manual(values = c("Drug A 10mg" = "#1B5E9E", "Placebo" = "#7A7A7A")) +
+  scale_shape_manual(values = c("Drug A 10mg" = 16, "Placebo" = 17)) +
+  labs(
+    title    = "SBP Change from Baseline at Week 12 by Age Group",
+    subtitle = "Mean ± 95% CI · Primary analysis population (ANL01FL = 'Y')",
+    x        = "Age Group (years)",
+    y        = "Change from Baseline (mmHg)",
+    color    = "Treatment Arm",
+    shape    = "Treatment Arm"
+  )
+```
+
+---
+
+## 11. Export
+
+Submission-ready ADaM datasets go out as `.xpt` via `haven::write_xpt()`.
+Writing CSV here for portability.
+
+```{r export, eval=FALSE}
+# In a real submission workflow:
+# library(haven)
+# write_xpt(adsl, "adsl.xpt", version = 5, name = "ADSL")
+# write_xpt(advs, "advs.xpt", version = 5, name = "ADVS")
+
+# For this vignette:
+write.csv(adsl, "adsl.csv", row.names = FALSE, na = "")
+write.csv(advs, "advs.csv", row.names = FALSE, na = "")
+
+message("ADSL: ", nrow(adsl), " rows, ", ncol(adsl), " columns")
+message("ADVS: ", nrow(advs), " rows, ", ncol(advs), " columns")
+```
+
+---
+
+## Summary
+
+Started from raw SDTM (DM + VS), built ADSL with population flags and derived
+dates, then constructed ADVS with the full BASE/CHG/PCHG chain following BDS
+conventions. Six QC checks passed cleanly. The simulated treatment effect
+(-12 mmHg Drug A vs. -3 mmHg Placebo at Week 12) shows up clearly in the
+primary analysis plot and holds directionally across age subgroups.
+
+References: CDISC ADaM IG v1.3 · CDISC SDTM IG v3.4 · FDA Study Data Technical Conformance Guide (2022)
+
+---
+
+*Vignette produced in R `r R.version$major`.`r R.version$minor` ·
+dplyr · lubridate · ggplot2 · gtsummary · kableExtra*
