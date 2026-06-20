@@ -1,5 +1,7 @@
 # SDTM → ADaM: Clinical Data Transformation Walkthrough
 
+**[View rendered vignette →](https://eugenehernandez.github.io/clinical_data_science_portfolio/sdtm_to_adam_vignette.html)**
+
 An R Markdown vignette I built while working through the CDISC ADaM
 Implementation Guide. The goal was to get hands-on with the derivation
 conventions — BASE join-back, ADY no-day-zero rule, flag variable behavior —
