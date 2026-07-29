@@ -649,3 +649,6 @@ References: CDISC ADaM IG v1.3 · CDISC SDTM IG v3.4 · FDA Study Data Technical
 
 *Vignette produced in R `r R.version$major`.`r R.version$minor` ·
 dplyr · lubridate · ggplot2 · gtsummary · kableExtra*
+
+# Note: synthetic SDTM source data generated with AI assistance.
+# ADaM derivations, validation checks, and analysis are my own.
