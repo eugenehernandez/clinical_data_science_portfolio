@@ -1,0 +1,175 @@
+---
+title: "Diabetes Chronic Disease Indicators - Cleaning and Summary"
+author: "Eugene Hernandez"
+date: "`r paste('August 19, 2026 (updated', format(Sys.Date(), '%B %d, %Y'), ')')`"
+format:
+  html:
+    toc: true
+    theme: cosmo
+    df-print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(tidyverse)
+library(janitor)
+library(gt)
+```
+
+## Overview
+
+This document reads the CDC U.S. Chronic Disease Indicators (CDI) dataset, filters it to diabetes, cleans it, and produces a set of summary tables. The focus is a clear, reproducible path from a raw public file to analysis-ready tables.
+
+The source is the CDC U.S. Chronic Disease Indicators dataset on data.cdc.gov (id: hksd-2xuw). A frozen copy is stored in the `data/` folder so the results reproduce regardless of later revisions to the source.
+
+## Read the data
+
+The raw file covers every chronic disease indicator, not just diabetes. A first look shows the scale.
+
+```{r}
+raw <- read_csv("data/U.S._Chronic_Disease_Indicators_20260819.csv")
+glimpse(raw)
+```
+
+Almost 400,000 rows across 34 columns. Several columns are empty for every row, several are redundant ID copies of text columns, and one holds a geolocation string that is not needed here.
+
+## Filter and initial clean
+
+The first cleaning pass filters to the diabetes topic, converts the column names to snake_case, and drops any column that is empty across all rows. Emptiness is measured within the diabetes subset, so a column that carried values only for other diseases is removed here as well.
+
+```{r}
+diabetes <- raw |>
+  filter(Topic == "Diabetes") |>
+  clean_names() |>
+  remove_empty("cols")
+
+glimpse(diabetes)
+```
+
+This cuts the data to about 22,600 diabetes rows and removes ten always-empty columns.
+
+## A note on suppressed values
+
+Two footnote columns survive the empty-column check because they are not empty. They record why some estimates are missing. The CDC suppresses values when a sample is too small to report reliably.
+
+```{r}
+diabetes |>
+  count(data_value_footnote) |>
+  arrange(desc(n))
+```
+
+These footnotes are kept on purpose. They explain the missing values that appear later in the state table, and treating them as information rather than noise is the more honest approach.
+
+## Table 1 - Diabetes prevalence by state
+
+This table ranks states by age-adjusted diabetes prevalence among adults for the most recent year. Age-adjusted prevalence is used rather than crude prevalence so that differences reflect diabetes burden rather than differences in the age makeup of each state. States with suppressed estimates are labelled rather than dropped.
+
+```{r}
+latest_year <- max(diabetes$year_start)
+
+prevalence_by_state <- diabetes |>
+  filter(
+    question == "Diabetes among adults",
+    data_value_type == "Age-adjusted Prevalence",
+    stratification_category1 == "Overall",
+    year_start == latest_year,
+    location_abbr != "US"
+  ) |>
+  select(state = location_desc, prevalence = data_value) |>
+  arrange(desc(prevalence))
+
+prevalence_by_state |>
+  gt() |>
+  tab_header(
+    title = "Age-Adjusted Diabetes Prevalence by State",
+    subtitle = paste("Adults,", latest_year)
+  ) |>
+  cols_label(state = "State", prevalence = "Prevalence (%)") |>
+  fmt_number(columns = prevalence, decimals = 1) |>
+  sub_missing(columns = prevalence, missing_text = "Suppressed")
+```
+
+## Table 2 - National prevalence over time
+
+This table follows national age-adjusted diabetes prevalence across the available years.
+
+```{r}
+prevalence_trend <- diabetes |>
+  filter(
+    question == "Diabetes among adults",
+    data_value_type == "Age-adjusted Prevalence",
+    stratification_category1 == "Overall",
+    location_abbr == "US"
+  ) |>
+  select(year = year_start, prevalence = data_value) |>
+  arrange(year)
+
+prevalence_trend |>
+  gt() |>
+  tab_header(
+    title = "U.S. Diabetes Prevalence Over Time",
+    subtitle = "Age-adjusted, adults"
+  ) |>
+  cols_label(year = "Year", prevalence = "Prevalence (%)") |>
+  fmt_number(columns = prevalence, decimals = 1)
+```
+
+## Table 2b - Prevalence by sex over time
+
+Splitting the national trend by sex shows a consistent gap between men and women. Because every year has both a male and a female value, the data reshapes cleanly into a wide table with one column per sex.
+
+```{r}
+prevalence_by_sex_wide <- diabetes |>
+  filter(
+    question == "Diabetes among adults",
+    data_value_type == "Age-adjusted Prevalence",
+    location_abbr == "US",
+    stratification_category1 == "Sex"
+  ) |>
+  select(year = year_start, sex = stratification1, prevalence = data_value) |>
+  pivot_wider(names_from = sex, values_from = prevalence) |>
+  arrange(year)
+
+prevalence_by_sex_wide |>
+  gt() |>
+  tab_header(
+    title = "U.S. Diabetes Prevalence by Sex",
+    subtitle = "Age-adjusted, adults"
+  ) |>
+  cols_label(year = "Year") |>
+  fmt_number(columns = c(Female, Male), decimals = 1)
+```
+
+## Table 3 - Prevalence by demographic group
+
+This table breaks national prevalence down by sex and by race and ethnicity for the most recent year. The two categories do not share the same groups, so the data stays in long form and the category is shown as a row group header rather than forced into columns.
+
+```{r}
+prevalence_by_demographic <- diabetes |>
+  filter(
+    question == "Diabetes among adults",
+    data_value_type == "Age-adjusted Prevalence",
+    location_abbr == "US",
+    year_start == latest_year,
+    stratification_category1 %in% c("Sex", "Age", "Race/Ethnicity")
+  ) |>
+  select(
+    category = stratification_category1,
+    group = stratification1,
+    prevalence = data_value
+  ) |>
+  arrange(category, desc(prevalence))
+
+prevalence_by_demographic |>
+  gt(groupname_col = "category") |>
+  tab_header(
+    title = "Diabetes Prevalence by Demographic Group",
+    subtitle = paste("Age-adjusted, U.S. adults,", latest_year)
+  ) |>
+  cols_label(group = "Group", prevalence = "Prevalence (%)") |>
+  fmt_number(columns = prevalence, decimals = 1)
+```
+
+## Notes and limitations
+
+The age-stratified breakdown is absent for age-adjusted prevalence, which is expected because an age-adjusted figure already accounts for age. Some state and group estimates are suppressed by the CDC for small sample sizes and appear as suppressed or drop out of a given view. All prevalence figures are age-adjusted unless stated otherwise.
