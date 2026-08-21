@@ -10,9 +10,9 @@ An R Markdown vignette built while working through the CDISC ADaM Implementation
 
 Key derivations include AGEGR1 and AGEGR1N, TRTSDT date conversion from ISO 8601, SAFFL and ITTFL population flags, AVAL from VSSTRESN, BASE via join-back on ABLFL, CHG and PCHG, ADY with no day zero, and ANL01FL. The vignette is fully reproducible and needs no external data.
 
-The rendered vignette is available on GitHub Pages at https://eugenehernandez.github.io/clinical_data_science_portfolio/sdtm_to_adam_vignette.html. The source and knitted output are `sdtm_to_adam_vignette.Rmd` and `sdtm_to_adam_vignette.html`.
+The rendered vignette is available on GitHub Pages at https://eugenehernandez.github.io/clinical_data_science_portfolio/sdtm_to_adam/sdtm_to_adam_vignette.html. The source and knitted output are `sdtm_to_adam_vignette.Rmd` and `sdtm_to_adam_vignette.html`.
 
-Two companion references support the vignette. The SDTM to ADaM data dictionary documents every input and derived variable, viewable at https://eugenehernandez.github.io/clinical_data_science_portfolio/SDTM_to_ADaM_data_dictionary.html. The SDTM-IG 3.4 domain reference guide summarizes the observation classes and domains, viewable at https://eugenehernandez.github.io/clinical_data_science_portfolio/SDTM_Domain_Reference_Guide.html.
+Two companion references support the vignette. The SDTM to ADaM data dictionary documents every input and derived variable, viewable at https://eugenehernandez.github.io/clinical_data_science_portfolio/sdtm_to_adam/SDTM_to_ADaM_data_dictionary.html. The SDTM-IG 3.4 domain reference guide summarizes the observation classes and domains, viewable at https://eugenehernandez.github.io/clinical_data_science_portfolio/sdtm_to_adam/SDTM_Domain_Reference_Guide.html.
 
 ### Diabetes Surveillance Indicators Cleaning
 
