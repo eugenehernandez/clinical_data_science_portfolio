@@ -1,46 +1,28 @@
-# SDTM → ADaM: Clinical Data Transformation Walkthrough
+# Clinical Data Science Portfolio
 
-**[View rendered vignette →](https://eugenehernandez.github.io/clinical_data_science_portfolio/sdtm_to_adam_vignette.html)**
+A collection of R projects built around clinical and public health data, created as part of a move toward pharmaceutical and CRO statistical programming. Each project emphasizes reproducible workflows that run from raw data to analysis-ready output, using R, the tidyverse, and modern reporting tools.
 
-An R Markdown vignette I built while working through the CDISC ADaM
-Implementation Guide. The goal was to get hands-on with the derivation
-conventions — BASE join-back, ADY no-day-zero rule, flag variable behavior —
-before applying them to real study data.
+## Projects
 
-## What it covers
+### SDTM to ADaM Clinical Data Transformation
 
-Simulated two-arm RCT (Drug A 10 mg vs. Placebo, 12-week hypertension trial).
-Starts from SDTM-structured source data (DM + VS domains), builds ADSL and
-ADVS following BDS conventions, runs six structural QC checks, then produces
-a Table 1, change-from-baseline figures, treatment difference table, and an
-age-group subgroup plot.
+An R Markdown vignette built while working through the CDISC ADaM Implementation Guide. It simulates a two-arm hypertension trial (Drug A 10 mg versus Placebo, 12 weeks), starts from SDTM-structured source data (DM and VS domains), and builds ADSL and ADVS datasets following BDS conventions. It runs six structural QC checks and produces a Table 1, change-from-baseline figures, a treatment difference table, and an age-group subgroup plot.
 
-Key derivations: AGEGR1/AGEGR1N, TRTSDT date conversion from ISO 8601,
-SAFFL/ITTFL population flags, AVAL from VSSTRESN, BASE via join-back on
-ABLFL, CHG/PCHG, ADY (no day zero), ANL01FL.
+Key derivations include AGEGR1 and AGEGR1N, TRTSDT date conversion from ISO 8601, SAFFL and ITTFL population flags, AVAL from VSSTRESN, BASE via join-back on ABLFL, CHG and PCHG, ADY with no day zero, and ANL01FL. The vignette is fully reproducible and needs no external data.
 
-## Files
+The rendered vignette is available on GitHub Pages at https://eugenehernandez.github.io/clinical_data_science_portfolio/sdtm_to_adam_vignette.html. The source and knitted output are `sdtm_to_adam_vignette.Rmd` and `sdtm_to_adam_vignette.html`.
 
-| File | Description |
-|------|-------------|
-| `sdtm_to_adam_vignette.Rmd` | Source — fully reproducible, no external data needed |
-| `sdtm_to_adam_vignette.html` | Knitted output — readable without R installed |
+### Diabetes Surveillance Indicators Cleaning
 
-## Running it
+A Quarto project that reads the CDC U.S. Chronic Disease Indicators dataset, filters it to diabetes, cleans it, and produces four summary tables. The focus is a documented, reproducible pass from a messy public file of nearly 400,000 rows to analysis-ready tables, with janitor for the cleaning, gt for the tables, and renv pinning the exact package environment.
 
-```r
-install.packages(c("dplyr", "tidyr", "lubridate", "ggplot2",
-                   "gtsummary", "kableExtra", "rmarkdown"))
-```
+The rendered report is available on GitHub Pages at https://eugenehernandez.github.io/clinical_data_science_portfolio/diabetes_cleaning/diabetes_cleaning.html. The project lives in the `diabetes_cleaning/` folder, which has its own README.
 
-Open the `.Rmd` in RStudio and click Knit, or:
+## Tools
 
-```r
-rmarkdown::render("sdtm_to_adam_vignette.Rmd")
-```
+R 4.6.0, the tidyverse, janitor, gt, gtsummary, kableExtra, Quarto, R Markdown, and renv for environment reproducibility.
 
-## References
+## Author
 
-- CDISC ADaM Implementation Guide v1.3
-- CDISC SDTM Implementation Guide v3.4
-- FDA Study Data Technical Conformance Guide (2022)
+Eugene Hernandez
+github.com/eugenehernandez/
