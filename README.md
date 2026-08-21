@@ -12,6 +12,8 @@ Key derivations include AGEGR1 and AGEGR1N, TRTSDT date conversion from ISO 8601
 
 The rendered vignette is available on GitHub Pages at https://eugenehernandez.github.io/clinical_data_science_portfolio/sdtm_to_adam_vignette.html. The source and knitted output are `sdtm_to_adam_vignette.Rmd` and `sdtm_to_adam_vignette.html`.
 
+Two companion references support the vignette. The SDTM to ADaM data dictionary documents every input and derived variable, viewable at https://eugenehernandez.github.io/clinical_data_science_portfolio/SDTM_to_ADaM_data_dictionary.html. The SDTM-IG 3.4 domain reference guide summarizes the observation classes and domains, viewable at https://eugenehernandez.github.io/clinical_data_science_portfolio/SDTM_Domain_Reference_Guide.html.
+
 ### Diabetes Surveillance Indicators Cleaning
 
 A Quarto project that reads the CDC U.S. Chronic Disease Indicators dataset, filters it to diabetes, cleans it, and produces four summary tables. The focus is a documented, reproducible pass from a messy public file of nearly 400,000 rows to analysis-ready tables, with janitor for the cleaning, gt for the tables, and renv pinning the exact package environment.
