@@ -14,6 +14,12 @@ https://data.cdc.gov/Chronic-Disease-Indicators/U-S-Chronic-Disease-Indicators/h
 
 A fixed copy of the dataset is stored in the `data/` folder so the analysis reproduces the same results regardless of later revisions to the source. The original download URL is recorded in a comment inside the analysis document.
 
+## Getting the data
+
+The source CSV exceeds GitHub's file-size limit and is not stored here.
+Download it from the link above into a `data/` folder in this project,
+then render the analysis document.
+
 ## What the analysis does
 
 - Reads the raw CDC Chronic Disease Indicators file (all topics)
@@ -35,7 +41,6 @@ Built with R 4.6.0, the tidyverse, janitor, gt, Quarto, and renv for environment
 
 ```
 .
-├── data/                     frozen copy of the source CSV
 ├── diabetes_cleaning.qmd     the analysis document
 ├── renv.lock                 pinned package versions
 ├── README.md
