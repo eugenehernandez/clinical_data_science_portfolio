@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SDTM → ADaM Data Dictionary</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,600;1,300&display=swap');
+
+  :root {
+    --bg:          #F6F7F9;
+    --surface:     #FFFFFF;
+    --border:      #DDE1E8;
+    --ink:         #181C24;
+    --ink-mid:     #47505F;
+    --ink-faint:   #8990A0;
+
+    --sdtm-col:    #1B5E9E;
+    --sdtm-lt:     #EBF2FB;
+    --adam-col:    #2E7D52;
+    --adam-lt:     #EAF4EE;
+    --derived-col: #7A4DB8;
+    --derived-lt:  #F3EEFC;
+    --key-col:     #B84040;
+    --key-lt:      #FDF0F0;
+    --req-col:     #C06A00;
+    --req-lt:      #FFF5E6;
+
+    --dm-accent:   #1B5E9E;
+    --vs-accent:   #1A7A6E;
+    --adsl-accent: #2E7D52;
+    --advs-accent: #7A4DB8;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    background: var(--bg);
+    color: var(--ink);
+    padding-bottom: 60px;
+  }
+
+  /* ── Header ── */
+  header {
+    background: linear-gradient(135deg, #1B3A6E 0%, #1B5E9E 60%, #1A7A6E 100%);
+    color: #fff;
+    padding: 36px 48px 28px;
+  }
+  header .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.6);
+    margin-bottom: 8px;
+  }
+  header h1 {
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -.01em;
+    margin-bottom: 6px;
+  }
+  header .arrow {
+    color: rgba(255,255,255,.5);
+    margin: 0 6px;
+  }
+  header p {
+    font-weight: 300;
+    font-size: 13.5px;
+    color: rgba(255,255,255,.8);
+    max-width: 680px;
+    margin-top: 4px;
+  }
+
+  /* ── Flow diagram ── */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin: 28px 48px 0;
+    flex-wrap: wrap;
+  }
+  .flow-box {
+    background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.25);
+    border-radius: 5px;
+    padding: 8px 18px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: .04em;
+  }
+  .flow-domain { background: rgba(255,255,255,.18); }
+  .flow-adam   { background: rgba(46,125,82,.45); }
+  .flow-arrow  {
+    color: rgba(255,255,255,.4);
+    font-size: 18px;
+    padding: 0 10px;
+    font-weight: 300;
+  }
+  .flow-label {
+    font-size: 10px;
+    color: rgba(255,255,255,.5);
+    text-align: center;
+    margin-top: 3px;
+    font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: .05em;
+  }
+  .flow-item { display: flex; flex-direction: column; align-items: center; }
+
+  /* ── Wrap ── */
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 0 32px; }
+
+  /* ── Legend ── */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+    margin: 24px 0 0;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 12px;
+    color: var(--ink-mid);
+  }
+  .legend strong { color: var(--ink); align-self: center; font-size: 12px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .ldot {
+    width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0;
+  }
+
+  /* ── Section headings ── */
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    margin: 38px 0 14px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--border);
+  }
+  .domain-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 3px;
+    letter-spacing: .06em;
+  }
+  .tag-dm   { background: #EBF2FB; color: var(--dm-accent); }
+  .tag-vs   { background: #E6F4F2; color: var(--vs-accent); }
+  .tag-adsl { background: var(--adam-lt); color: var(--adsl-accent); }
+  .tag-advs { background: var(--derived-lt); color: var(--advs-accent); }
+
+  .section-head h2 { font-size: 16px; font-weight: 600; }
+  .section-head .sub { font-size: 12px; color: var(--ink-faint); font-style: italic; }
+
+  /* ── Tables ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+  thead th {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--ink-mid);
+    background: #F0F4FA;
+    padding: 9px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr { border-bottom: 1px solid var(--border); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--bg); }
+  tbody td {
+    padding: 9px 14px;
+    color: var(--ink-mid);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+  tbody td:first-child {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  /* badges inside tables */
+  .badge {
+    display: inline-block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    padding: 1px 6px;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+  .b-key     { background: var(--key-lt);     color: var(--key-col);     }
+  .b-sdtm    { background: var(--sdtm-lt);    color: var(--sdtm-col);    }
+  .b-derived { background: var(--derived-lt); color: var(--derived-col); }
+  .b-req     { background: var(--req-lt);     color: var(--req-col);     }
+  .b-adam    { background: var(--adam-lt);    color: var(--adam-col);    }
+
+  /* ── Derivation boxes ── */
+  .deriv {
+    margin-top: 4px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--derived-col);
+    background: var(--derived-lt);
+    border-left: 3px solid var(--derived-col);
+    padding: 4px 8px;
+    border-radius: 0 3px 3px 0;
+    line-height: 1.5;
+  }
+
+  /* ── Note ── */
+  .note {
+    margin: 10px 0 0;
+    padding: 11px 14px;
+    background: var(--sdtm-lt);
+    border-left: 3px solid var(--sdtm-col);
+    border-radius: 0 4px 4px 0;
+    font-size: 12.5px;
+    color: var(--sdtm-col);
+    line-height: 1.55;
+  }
+  .note.adam {
+    background: var(--adam-lt);
+    border-color: var(--adam-col);
+    color: var(--adam-col);
+  }
+
+  /* ── Mapping summary cards ── */
+  .mapping-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 10px;
+  }
+  @media (max-width: 640px) { .mapping-grid { grid-template-columns: 1fr; } }
+  .map-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .map-card-head {
+    padding: 10px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: .04em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .mh-sdtm { background: var(--sdtm-lt); color: var(--sdtm-col); }
+  .mh-adam { background: var(--adam-lt);  color: var(--adam-col); }
+  .map-card ul { padding: 10px 16px 12px; list-style: none; }
+  .map-card ul li {
+    font-size: 12.5px;
+    color: var(--ink-mid);
+    padding: 3px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .map-card ul li:last-child { border-bottom: none; }
+  .map-card ul li code {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    color: var(--ink);
+    background: var(--bg);
+    padding: 1px 4px;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+  .arrow-sym { color: var(--adam-col); font-weight: 600; }
+
+  footer {
+    margin-top: 52px;
+    padding: 18px 48px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--ink-faint);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">R Portfolio Vignette · CDISC Clinical Data Standards</div>
+  <h1>SDTM <span class="arrow">→</span> ADaM Data Dictionary</h1>
+  <p>Variable reference for a simulated SDTM-to-ADaM transformation covering Demographics (DM) and Vital Signs (VS) as input domains, deriving ADSL and ADVS as analysis-ready outputs.</p>
+
+  <div class="flow">
+    <div class="flow-item">
+      <div class="flow-box flow-domain">DM</div>
+      <div class="flow-label">Demographics</div>
+    </div>
+    <div class="flow-arrow">+</div>
+    <div class="flow-item">
+      <div class="flow-box flow-domain">VS</div>
+      <div class="flow-label">Vital Signs</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-item">
+      <div class="flow-box flow-adam">ADSL</div>
+      <div class="flow-label">Subject-Level</div>
+    </div>
+    <div class="flow-arrow">+</div>
+    <div class="flow-item">
+      <div class="flow-box flow-adam">ADVS</div>
+      <div class="flow-label">Vital Signs BDS</div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <strong>Variable role:</strong>
+    <span class="legend-item"><span class="ldot" style="background:var(--key-col)"></span>Primary key / linking variable</span>
+    <span class="legend-item"><span class="ldot" style="background:var(--sdtm-col)"></span>Sourced directly from SDTM</span>
+    <span class="legend-item"><span class="ldot" style="background:var(--derived-col)"></span>Derived / computed in ADaM</span>
+    <span class="legend-item"><span class="ldot" style="background:var(--req-col)"></span>Required by CDISC ADaM IG</span>
+    <span class="legend-item"><span class="ldot" style="background:var(--adam-col)"></span>ADaM-specific (no SDTM equivalent)</span>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- SDTM SECTION -->
+  <!-- ══════════════════════════════════════════════════════ -->
+
+  <div class="section-head">
+    <span class="domain-tag tag-dm">SDTM · DM</span>
+    <h2>Demographics Domain</h2>
+    <span class="sub">One row per subject · source for ADSL</span>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Variable</th>
+        <th>Type</th>
+        <th>Role</th>
+        <th>Description &amp; expected values</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>STUDYID</td>
+        <td>Char</td>
+        <td><span class="badge b-key">Key</span></td>
+        <td>Unique study identifier. Carried forward unchanged into every ADaM dataset. e.g. <code>"STUDY-001"</code></td>
+      </tr>
+      <tr>
+        <td>USUBJID</td>
+        <td>Char</td>
+        <td><span class="badge b-key">Key</span></td>
+        <td>Unique subject identifier across the study. Format: <code>STUDYID-SITEID-SUBJID</code>. The primary join key between DM, VS, and all ADaM datasets.</td>
+      </tr>
+      <tr>
+        <td>SUBJID</td>
+        <td>Char</td>
+        <td><span class="badge b-sdtm">SDTM</span></td>
+        <td>Subject identifier within a site. Shorter than USUBJID; used in listings but USUBJID is preferred for all merges.</td>
+      </tr>
+      <tr>
+        <td>AGE</td>
+        <td>Num</td>
+        <td><span class="badge b-sdtm">SDTM</span></td>
+        <td>Age in years at the time of informed consent. Integer. Used to derive AGEGR1 in ADSL.</td>
+      </tr>
+      <tr>
+        <td>AGEU</td>
+        <td>Char</td>
+        <td><span class="badge b-sdtm">SDTM</span></td>
+        <td>Unit for AGE. Always <code>"YEARS"</code> in adult studies.</td>
+      </tr>
+      <tr>
+        <td>SEX</td>
+        <td>Char</td>
+        <td><span class="badge b-sdtm">SDTM</span></td>
+        <td>Biological sex. Controlled terminology: <code>"M"</code> = Male, <code>"F"</code> = Female, <code>"U"</code> = Unknown. Carried into ADSL; a numeric version (SEXN) is derived.</td>
+      </tr>
+      <tr>
+        <td>RACE</td>
+        <td>Char</td>
+        <td><span class="badge b-sdtm">SDTM</span></td>
+        <td>Subject's race per CDISC controlled terminology. e.g. <code>"WHITE"</code>, <code>"BLACK OR AFRICAN AMERICAN"</code>, <code>"ASIAN"</code>. Carried into ADSL; RACEN derived.</td>
+      </tr>
+      <tr>
+        <td>ETHNIC</td>
+        <td>Char</td>
+        <td><span class="badge b-sdtm">SDTM</span></td>
+        <td>Ethnicity. <code>"HISPANIC OR LATINO"</code> / <code>"NOT HISPANIC OR LATINO"</code>. Optional in this vignette.</td>
+      </tr>
+      <tr>
+        <td>ARM</td>
+        <td>Char</td>
+        <td><span class="badge b-sdtm">SDTM</span></td>
+        <td>Planned treatment arm description as randomized. e.g. <code>"Drug A 10mg"</code>, <code>"Placebo"</code>. Becomes TRT01P in ADSL.</td>
+      </tr>
+      <tr>
+        <td>ARMCD</td>
+        <td>Char</td>
+        <td><span class="badge b-sdtm">SDTM</span></td>
+        <td>Short code for ARM. e.g. <code>"DRUGA"</code>, <code>"PBO"</code>. 20-character max. Becomes TRT01PN (numeric) in ADSL.</td>
+      </tr>
+      <tr>
+        <td>ACTARM</td>
+        <td>Char</td>
+        <td><span class="badge b-sdtm">SDTM</span></td>
+        <td>Actual treatment received (may differ from ARM if subject was randomized incorrectly or switched). Becomes TRT01A in ADSL.</td>
+      </tr>
+      <tr>
+        <td>RFSTDTC</td>
+        <td>Char</td>
+        <td><span class="badge b-sdtm">SDTM</span></td>
+        <td>Reference start date/time in ISO 8601 format (<code>YYYY-MM-DD</code>). Usually the date of first dose. Used to compute study day (ADY) in ADVS.</td>
+      </tr>
+      <tr>
+        <td>RFENDTC</td>
+        <td>Char</td>
+        <td><span class="badge b-sdtm">SDTM</span></td>
+        <td>Reference end date/time. Usually the date of last dose or last observation. Used to define end of treatment period.</td>
+      </tr>
+      <tr>
+        <td>DMDTC</td>
+        <td>Char</td>
+        <td><span class="badge b-sdtm">SDTM</span></td>
+        <td>Date of collection for the DM record (consent date). ISO 8601 format.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <strong>SDTM date convention:</strong> All dates in SDTM are stored as ISO 8601 character strings (<code>YYYY-MM-DD</code> or <code>YYYY-MM-DDThh:mm:ss</code>). ADaM converts these to numeric SAS date values (ADT) and integer study days (ADY) during transformation.
+  </div>
+
+  <!-- DM → ADSL mapping preview -->
+  <div class="section-head" style="margin-top:30px;">
+    <span class="domain-tag tag-vs">SDTM · VS</span>
+    <h2>Vital Signs Domain</h2>
+    <span class="sub">One row per subject per visit per test · source for ADVS</span>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Variable</th>
+        <th>Type</th>
+        <th>Role</th>
+        <th>Description &amp; expected values</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>STUDYID</td>
+        <td>Char</td>
+        <td><span class="badge b-key">Key</span></td>
+        <td>Study identifier. Matches DM.STUDYID exactly.</td>
+      </tr>
+      <tr>
+        <td>USUBJID</td>
+        <td>Char</td>
+        <td><span class="badge b-key">Key</span></td>
+        <td>Subject identifier. Join key to DM and ADSL.</td>
+      </tr>
+      <tr>
+        <td>VSSEQ</td>
+        <td>Num</td>
+        <td><span class="badge b-sdtm">SDTM</span></td>
+        <td>Sequence number. Unique within USUBJID. Ensures row uniqueness in the VS dataset.</td>
+      </tr>
+      <tr>
+        <td>VSTESTCD</td>
+        <td>Char</td>
+        <td><span class="badge b-key">Key</span></td>
+        <td>Short code for the vital sign measurement. CDISC controlled terminology. e.g. <code>"SYSBP"</code> (Systolic BP), <code>"DIABP"</code> (Diastolic BP), <code>"WEIGHT"</code>, <code>"HEIGHT"</code>, <code>"PULSE"</code>, <code>"TEMP"</code>. Becomes PARAMCD in ADVS.</td>
+      </tr>
+      <tr>
+        <td>VSTEST</td>
+        <td>Char</td>
+        <td><span class="badge b-sdtm">SDTM</span></td>
+        <td>Long description of VSTESTCD. e.g. <code>"Systolic Blood Pressure"</code>. Becomes PARAM in ADVS.</td>
+      </tr>
+      <tr>
+        <td>VSORRES</td>
+        <td>Char</td>
+        <td><span class="badge b-sdtm">SDTM</span></td>
+        <td>Original result as recorded on the CRF (character). May include text or numeric values before standardization.</td>
+      </tr>
+      <tr>
+        <td>VSORRESU</td>
+        <td>Char</td>
+        <td><span class="badge b-sdtm">SDTM</span></td>
+        <td>Original units as reported. e.g. <code>"mmHg"</code>, <code>"kg"</code>, <code>"cm"</code>, <code>"beats/min"</code>.</td>
+      </tr>
+      <tr>
+        <td>VSSTRESN</td>
+        <td>Num</td>
+        <td><span class="badge b-sdtm">SDTM</span></td>
+        <td>Standardized numeric result. The primary source for AVAL in ADVS. All measurements converted to a single standard unit before being stored here.</td>
+      </tr>
+      <tr>
+        <td>VSSTRESC</td>
+        <td>Char</td>
+        <td><span class="badge b-sdtm">SDTM</span></td>
+        <td>Standardized result in character format. Mirrors VSSTRESN but as text; used when result is non-numeric.</td>
+      </tr>
+      <tr>
+        <td>VSSTRESU</td>
+        <td>Char</td>
+        <td><span class="badge b-sdtm">SDTM</span></td>
+        <td>Standardized units. Consistent across all records for a given VSTESTCD. e.g. all blood pressure values in <code>"mmHg"</code>.</td>
+      </tr>
+      <tr>
+        <td>VSBLFL</td>
+        <td>Char</td>
+        <td><span class="badge b-sdtm">SDTM</span></td>
+        <td>Baseline flag. <code>"Y"</code> if this record is designated the baseline measurement for this subject and test. Used to derive BASE in ADVS.</td>
+      </tr>
+      <tr>
+        <td>VISITNUM</td>
+        <td>Num</td>
+        <td><span class="badge b-sdtm">SDTM</span></td>
+        <td>Numeric visit identifier. Controls chronological ordering of visits. Becomes AVISITN in ADVS.</td>
+      </tr>
+      <tr>
+        <td>VISIT</td>
+        <td>Char</td>
+        <td><span class="badge b-sdtm">SDTM</span></td>
+        <td>Protocol visit label. e.g. <code>"Screening"</code>, <code>"Week 4"</code>, <code>"Week 12"</code>, <code>"End of Treatment"</code>. Becomes AVISIT in ADVS.</td>
+      </tr>
+      <tr>
+        <td>VSDTC</td>
+        <td>Char</td>
+        <td><span class="badge b-sdtm">SDTM</span></td>
+        <td>Date of the vital signs assessment. ISO 8601 format. Converted to numeric ADT and integer ADY (study day) in ADVS using RFSTDTC from DM.</td>
+      </tr>
+      <tr>
+        <td>VSDY</td>
+        <td>Num</td>
+        <td><span class="badge b-sdtm">SDTM</span></td>
+        <td>Study day of collection relative to RFSTDTC. Day 1 = first dose date. No day zero: −1 precedes day 1 directly. Cross-check for ADY derivation.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- ADaM SECTION: ADSL -->
+  <!-- ══════════════════════════════════════════════════════ -->
+
+  <div class="section-head">
+    <span class="domain-tag tag-adsl">ADaM · ADSL</span>
+    <h2>Subject-Level Analysis Dataset</h2>
+    <span class="sub">One row per subject · derived from DM · required by all other ADaM datasets</span>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Variable</th>
+        <th>Type</th>
+        <th>Role</th>
+        <th>Source / Derivation</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>STUDYID</td>
+        <td>Char</td>
+        <td><span class="badge b-sdtm">From DM</span></td>
+        <td>Copied directly from DM.STUDYID.</td>
+      </tr>
+      <tr>
+        <td>USUBJID</td>
+        <td>Char</td>
+        <td><span class="badge b-key">Key</span></td>
+        <td>Copied directly from DM.USUBJID. Primary join key for all BDS datasets.</td>
+      </tr>
+      <tr>
+        <td>SUBJID</td>
+        <td>Char</td>
+        <td><span class="badge b-sdtm">From DM</span></td>
+        <td>Copied from DM.SUBJID.</td>
+      </tr>
+      <tr>
+        <td>AGE</td>
+        <td>Num</td>
+        <td><span class="badge b-sdtm">From DM</span></td>
+        <td>Copied from DM.AGE.</td>
+      </tr>
+      <tr>
+        <td>AGEGR1</td>
+        <td>Char</td>
+        <td><span class="badge b-derived">Derived</span></td>
+        <td>Age group category. Derived from AGE using protocol-specified cut-points.
+          <div class="deriv">if AGE &lt; 40 → "&lt;40" | if AGE 40–64 → "40–64" | if AGE ≥ 65 → "≥65"</div>
+        </td>
+      </tr>
+      <tr>
+        <td>AGEGR1N</td>
+        <td>Num</td>
+        <td><span class="badge b-derived">Derived</span></td>
+        <td>Numeric code for AGEGR1 to enable sorting in tables and figures.
+          <div class="deriv">"&lt;40" → 1 | "40–64" → 2 | "≥65" → 3</div>
+        </td>
+      </tr>
+      <tr>
+        <td>SEX</td>
+        <td>Char</td>
+        <td><span class="badge b-sdtm">From DM</span></td>
+        <td>Copied from DM.SEX. <code>"M"</code> / <code>"F"</code>.</td>
+      </tr>
+      <tr>
+        <td>SEXN</td>
+        <td>Num</td>
+        <td><span class="badge b-derived">Derived</span></td>
+        <td>Numeric version of SEX for sorting.
+          <div class="deriv">"F" → 1 | "M" → 2 | "U" → 3</div>
+        </td>
+      </tr>
+      <tr>
+        <td>RACE</td>
+        <td>Char</td>
+        <td><span class="badge b-sdtm">From DM</span></td>
+        <td>Copied from DM.RACE.</td>
+      </tr>
+      <tr>
+        <td>RACEN</td>
+        <td>Num</td>
+        <td><span class="badge b-derived">Derived</span></td>
+        <td>Numeric version of RACE for sorting in output tables.</td>
+      </tr>
+      <tr>
+        <td>TRT01P</td>
+        <td>Char</td>
+        <td><span class="badge b-sdtm">From DM</span></td>
+        <td>Planned treatment for Period 1. Copied from DM.ARM.</td>
+      </tr>
+      <tr>
+        <td>TRT01PN</td>
+        <td>Num</td>
+        <td><span class="badge b-derived">Derived</span></td>
+        <td>Numeric code for TRT01P. Used to sort treatment columns consistently in output.
+          <div class="deriv">e.g. "Drug A 10mg" → 1 | "Placebo" → 2</div>
+        </td>
+      </tr>
+      <tr>
+        <td>TRT01A</td>
+        <td>Char</td>
+        <td><span class="badge b-sdtm">From DM</span></td>
+        <td>Actual treatment received in Period 1. Copied from DM.ACTARM.</td>
+      </tr>
+      <tr>
+        <td>TRT01AN</td>
+        <td>Num</td>
+        <td><span class="badge b-derived">Derived</span></td>
+        <td>Numeric code for TRT01A. Same mapping as TRT01PN unless subjects received wrong treatment.</td>
+      </tr>
+      <tr>
+        <td>TRTSDT</td>
+        <td>Num</td>
+        <td><span class="badge b-derived">Derived</span></td>
+        <td>Treatment start date as a numeric (SAS-style) date. Derived by converting DM.RFSTDTC from ISO 8601 character to a date value.
+          <div class="deriv">as.Date(RFSTDTC) in R · lubridate::ymd(RFSTDTC)</div>
+        </td>
+      </tr>
+      <tr>
+        <td>TRTEDT</td>
+        <td>Num</td>
+        <td><span class="badge b-derived">Derived</span></td>
+        <td>Treatment end date. Derived from DM.RFENDTC in the same manner as TRTSDT.</td>
+      </tr>
+      <tr>
+        <td>SAFFL</td>
+        <td>Char</td>
+        <td><span class="badge b-adam">ADaM</span></td>
+        <td>Safety population flag. <code>"Y"</code> if subject received at least one dose of study drug. Defines the denominator for safety analyses.
+          <div class="deriv">if !is.na(TRTSDT) → "Y" else "N"</div>
+        </td>
+      </tr>
+      <tr>
+        <td>ITTFL</td>
+        <td>Char</td>
+        <td><span class="badge b-adam">ADaM</span></td>
+        <td>Intent-to-Treat population flag. <code>"Y"</code> if subject was randomized (ARM is not missing). Defines the primary efficacy analysis population.
+          <div class="deriv">if !is.na(ARM) → "Y" else "N"</div>
+        </td>
+      </tr>
+      <tr>
+        <td>PPROTFL</td>
+        <td>Char</td>
+        <td><span class="badge b-adam">ADaM</span></td>
+        <td>Per-Protocol population flag. <code>"Y"</code> if subject met all protocol criteria without major deviations. In this simulated vignette, all randomized subjects are assumed PP unless otherwise specified.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="note adam">
+    <strong>ADaM convention:</strong> All flag variables (_FL suffix) take values <code>"Y"</code> or <code>""</code> (blank, never "N") per the ADaM Implementation Guide. Numeric companion variables (_N suffix) are always included alongside character categoricals to support sorting in TLFs (Tables, Listings, Figures).
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- ADaM SECTION: ADVS -->
+  <!-- ══════════════════════════════════════════════════════ -->
+
+  <div class="section-head">
+    <span class="domain-tag tag-advs">ADaM · ADVS</span>
+    <h2>Vital Signs Analysis Dataset (BDS)</h2>
+    <span class="sub">One row per subject per parameter per visit · Basic Data Structure · derived from ADSL + VS</span>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Variable</th>
+        <th>Type</th>
+        <th>Role</th>
+        <th>Source / Derivation</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>STUDYID</td>
+        <td>Char</td>
+        <td><span class="badge b-key">Key</span></td>
+        <td>From ADSL.STUDYID.</td>
+      </tr>
+      <tr>
+        <td>USUBJID</td>
+        <td>Char</td>
+        <td><span class="badge b-key">Key</span></td>
+        <td>Join key to ADSL. From VS.USUBJID.</td>
+      </tr>
+      <tr>
+        <td>PARAMCD</td>
+        <td>Char</td>
+        <td><span class="badge b-sdtm">From VS</span></td>
+        <td>Parameter short code. Copied directly from VS.VSTESTCD.
+          <div class="deriv">e.g. "SYSBP" | "DIABP" | "WEIGHT" | "PULSE" | "TEMP"</div>
+        </td>
+      </tr>
+      <tr>
+        <td>PARAM</td>
+        <td>Char</td>
+        <td><span class="badge b-sdtm">From VS</span></td>
+        <td>Parameter description with units appended for display. Derived from VS.VSTEST and VS.VSSTRESU.
+          <div class="deriv">paste0(VSTEST, " (", VSSTRESU, ")") → "Systolic Blood Pressure (mmHg)"</div>
+        </td>
+      </tr>
+      <tr>
+        <td>AVAL</td>
+        <td>Num</td>
+        <td><span class="badge b-req">Required</span></td>
+        <td>Analysis value. The primary numeric result for statistical analysis. Copied from VS.VSSTRESN (the standardized numeric result).
+          <div class="deriv">AVAL = VSSTRESN</div>
+        </td>
+      </tr>
+      <tr>
+        <td>AVALC</td>
+        <td>Char</td>
+        <td><span class="badge b-adam">ADaM</span></td>
+        <td>Analysis value in character form. Used when AVAL is not applicable (e.g. categorical responses). Populated from VS.VSSTRESC when VSSTRESN is missing.</td>
+      </tr>
+      <tr>
+        <td>ABLFL</td>
+        <td>Char</td>
+        <td><span class="badge b-derived">Derived</span></td>
+        <td>Baseline record flag. <code>"Y"</code> for the record designated as baseline for this subject and parameter.
+          <div class="deriv">if VS.VSBLFL == "Y" → "Y" else ""</div>
+        </td>
+      </tr>
+      <tr>
+        <td>BASE</td>
+        <td>Num</td>
+        <td><span class="badge b-derived">Derived</span></td>
+        <td>Baseline analysis value. The AVAL from the record where ABLFL = "Y" for each USUBJID × PARAMCD combination, propagated to all subsequent rows.
+          <div class="deriv">BASE = AVAL[ABLFL == "Y"] joined back to all rows by USUBJID + PARAMCD</div>
+        </td>
+      </tr>
+      <tr>
+        <td>CHG</td>
+        <td>Num</td>
+        <td><span class="badge b-derived">Derived</span></td>
+        <td>Change from baseline. Computed for all post-baseline records only.
+          <div class="deriv">CHG = AVAL − BASE (set to NA for baseline and pre-baseline rows)</div>
+        </td>
+      </tr>
+      <tr>
+        <td>PCHG</td>
+        <td>Num</td>
+        <td><span class="badge b-derived">Derived</span></td>
+        <td>Percent change from baseline.
+          <div class="deriv">PCHG = (CHG / BASE) × 100 (set to NA when BASE = 0 or is missing)</div>
+        </td>
+      </tr>
+      <tr>
+        <td>DTYPE</td>
+        <td>Char</td>
+        <td><span class="badge b-adam">ADaM</span></td>
+        <td>Derivation type. Identifies derived or imputed records. Blank for observed records. e.g. <code>"LOCF"</code> (Last Observation Carried Forward) for imputed records. In this vignette, all records are observed so DTYPE is left blank.</td>
+      </tr>
+      <tr>
+        <td>ADT</td>
+        <td>Num</td>
+        <td><span class="badge b-derived">Derived</span></td>
+        <td>Analysis date as a numeric date value. Converted from VS.VSDTC.
+          <div class="deriv">ADT = as.Date(VSDTC)</div>
+        </td>
+      </tr>
+      <tr>
+        <td>ADY</td>
+        <td>Num</td>
+        <td><span class="badge b-derived">Derived</span></td>
+        <td>Analysis study day relative to treatment start (TRTSDT from ADSL). No day zero per CDISC convention.
+          <div class="deriv">if ADT ≥ TRTSDT → ADY = ADT − TRTSDT + 1<br>if ADT &lt; TRTSDT → ADY = ADT − TRTSDT</div>
+        </td>
+      </tr>
+      <tr>
+        <td>AVISIT</td>
+        <td>Char</td>
+        <td><span class="badge b-sdtm">From VS</span></td>
+        <td>Analysis visit label. Copied from VS.VISIT. e.g. <code>"Screening"</code>, <code>"Week 4"</code>, <code>"Week 12"</code>, <code>"End of Treatment"</code>.</td>
+      </tr>
+      <tr>
+        <td>AVISITN</td>
+        <td>Num</td>
+        <td><span class="badge b-sdtm">From VS</span></td>
+        <td>Numeric analysis visit. Copied from VS.VISITNUM. Controls chronological sort order of visits in outputs.</td>
+      </tr>
+      <tr>
+        <td>ANL01FL</td>
+        <td>Char</td>
+        <td><span class="badge b-adam">ADaM</span></td>
+        <td>Analysis flag for the primary analysis (Analysis 01). <code>"Y"</code> for records included in the primary statistical analysis window. Excludes screening, post-treatment, and imputed records as appropriate.
+          <div class="deriv">if AVISITN > 0 and DTYPE == "" → "Y" else ""</div>
+        </td>
+      </tr>
+      <tr>
+        <td>TRT01P</td>
+        <td>Char</td>
+        <td><span class="badge b-adam">ADaM</span></td>
+        <td>Planned treatment. Merged from ADSL by USUBJID. Enables treatment group comparisons within ADVS without re-merging ADSL each time.</td>
+      </tr>
+      <tr>
+        <td>TRT01PN</td>
+        <td>Num</td>
+        <td><span class="badge b-adam">ADaM</span></td>
+        <td>Numeric planned treatment code. Merged from ADSL. Used for sorting treatment columns in output tables.</td>
+      </tr>
+      <tr>
+        <td>SAFFL</td>
+        <td>Char</td>
+        <td><span class="badge b-adam">ADaM</span></td>
+        <td>Safety flag. Merged from ADSL. Used to subset ADVS to the safety population for analysis without re-merging ADSL.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- DERIVATION SEQUENCE NOTE -->
+  <div class="note adam">
+    <strong>Derivation order matters:</strong> ADSL must be finalized before ADVS is built. The correct sequence is: (1) clean and confirm DM → (2) derive ADSL including TRTSDT and all population flags → (3) merge VS with ADSL on USUBJID → (4) derive AVAL, ADT, ADY → (5) derive BASE by joining ABLFL = "Y" records back → (6) derive CHG, PCHG, ANL01FL.
+  </div>
+
+  <!-- KEY VARIABLE MAPPING SUMMARY -->
+  <div class="section-head">
+    <h2>SDTM → ADaM Variable Mapping Summary</h2>
+    <span class="sub">Quick reference for the transformation logic in R</span>
+  </div>
+
+  <div class="mapping-grid">
+    <div class="map-card">
+      <div class="map-card-head mh-sdtm">DM → ADSL</div>
+      <ul>
+        <li><code>STUDYID</code> <span class="arrow-sym">→</span> ADSL.STUDYID (copy)</li>
+        <li><code>USUBJID</code> <span class="arrow-sym">→</span> ADSL.USUBJID (copy)</li>
+        <li><code>AGE</code> <span class="arrow-sym">→</span> ADSL.AGE + derive AGEGR1, AGEGR1N</li>
+        <li><code>SEX</code> <span class="arrow-sym">→</span> ADSL.SEX + derive SEXN</li>
+        <li><code>RACE</code> <span class="arrow-sym">→</span> ADSL.RACE + derive RACEN</li>
+        <li><code>ARM</code> <span class="arrow-sym">→</span> ADSL.TRT01P + derive TRT01PN</li>
+        <li><code>ACTARM</code> <span class="arrow-sym">→</span> ADSL.TRT01A + derive TRT01AN</li>
+        <li><code>RFSTDTC</code> <span class="arrow-sym">→</span> ADSL.TRTSDT (date convert)</li>
+        <li><code>RFENDTC</code> <span class="arrow-sym">→</span> ADSL.TRTEDT (date convert)</li>
+        <li>— <span class="arrow-sym">→</span> ADSL.SAFFL (derive: !is.na(TRTSDT))</li>
+        <li>— <span class="arrow-sym">→</span> ADSL.ITTFL (derive: !is.na(ARM))</li>
+      </ul>
+    </div>
+    <div class="map-card">
+      <div class="map-card-head mh-adam">VS + ADSL → ADVS</div>
+      <ul>
+        <li><code>VSTESTCD</code> <span class="arrow-sym">→</span> ADVS.PARAMCD (copy)</li>
+        <li><code>VSTEST + VSSTRESU</code> <span class="arrow-sym">→</span> ADVS.PARAM (concat)</li>
+        <li><code>VSSTRESN</code> <span class="arrow-sym">→</span> ADVS.AVAL (copy)</li>
+        <li><code>VSBLFL</code> <span class="arrow-sym">→</span> ADVS.ABLFL (copy)</li>
+        <li><code>VISIT / VISITNUM</code> <span class="arrow-sym">→</span> ADVS.AVISIT / AVISITN</li>
+        <li><code>VSDTC</code> <span class="arrow-sym">→</span> ADVS.ADT (date convert)</li>
+        <li><code>ADT − TRTSDT</code> <span class="arrow-sym">→</span> ADVS.ADY (derive)</li>
+        <li><code>AVAL[ABLFL=="Y"]</code> <span class="arrow-sym">→</span> ADVS.BASE (join back)</li>
+        <li><code>AVAL − BASE</code> <span class="arrow-sym">→</span> ADVS.CHG (derive)</li>
+        <li><code>CHG / BASE × 100</code> <span class="arrow-sym">→</span> ADVS.PCHG (derive)</li>
+        <li>ADSL.TRT01P/PN <span class="arrow-sym">→</span> ADVS (merge on USUBJID)</li>
+        <li>ADSL.SAFFL <span class="arrow-sym">→</span> ADVS (merge on USUBJID)</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  CDISC ADaM Implementation Guide v1.3 · SDTM Implementation Guide v3.4 · R packages: dplyr, lubridate, haven · Portfolio vignette reference — E. Hernandez
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SDTM-IG 3.4 – Domain Reference Guide</title>
+<style>
+  :root {
+    --bg: #f4f6f9;
+    --surface: #ffffff;
+    --border: #e2e8f0;
+    --text: #1e2a3a;
+    --muted: #64748b;
+    --accent: #1d4ed8;
+
+    --events: #dc2626;
+    --events-light: #fef2f2;
+    --events-border: #fca5a5;
+
+    --interventions: #d97706;
+    --interventions-light: #fffbeb;
+    --interventions-border: #fcd34d;
+
+    --findings: #16a34a;
+    --findings-light: #f0fdf4;
+    --findings-border: #86efac;
+
+    --findingsabout: #0891b2;
+    --findingsabout-light: #ecfeff;
+    --findingsabout-border: #67e8f9;
+
+    --special: #7c3aed;
+    --special-light: #f5f3ff;
+    --special-border: #c4b5fd;
+
+    --trial: #be185d;
+    --trial-light: #fdf2f8;
+    --trial-border: #f9a8d4;
+
+    --relationship: #475569;
+    --relationship-light: #f8fafc;
+    --relationship-border: #cbd5e1;
+
+    --identifier-bg: #1e2a3a;
+    --identifier-tag-bg: #2d3f55;
+    --identifier-tag-border: #3d5470;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 2rem 1.5rem 4rem;
+    font-size: 14px;
+  }
+
+  header {
+    max-width: 1200px;
+    margin: 0 auto 2.5rem;
+    border-left: 5px solid var(--accent);
+    padding-left: 1.25rem;
+  }
+
+  header h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.2;
+  }
+
+  header p {
+    color: var(--muted);
+    margin-top: 0.4rem;
+    font-size: 0.9rem;
+  }
+
+  header .ref {
+    display: inline-block;
+    margin-top: 0.75rem;
+    background: var(--accent);
+    color: white;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 4px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+  }
+
+  .legend {
+    max-width: 1200px;
+    margin: 0 auto 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ── Identifier Preface Banner ── */
+  .identifier-banner {
+    max-width: 1200px;
+    margin: 0 auto 2.5rem;
+    background: var(--identifier-bg);
+    border-radius: 12px;
+    padding: 1.4rem 1.6rem;
+    color: #e2e8f0;
+  }
+
+  .identifier-banner h3 {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #94a3b8;
+    margin-bottom: 0.4rem;
+  }
+
+  .identifier-banner p {
+    font-size: 0.82rem;
+    color: #94a3b8;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+  }
+
+  .identifier-banner p strong {
+    color: #cbd5e1;
+  }
+
+  .id-vars {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+
+  .id-var {
+    display: flex;
+    flex-direction: column;
+    background: var(--identifier-tag-bg);
+    border: 1px solid var(--identifier-tag-border);
+    border-radius: 7px;
+    padding: 0.55rem 0.85rem;
+    min-width: 130px;
+  }
+
+  .id-var .vname {
+    font-family: 'Cascadia Code', 'Consolas', monospace;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #7dd3fc;
+    letter-spacing: 0.03em;
+  }
+
+  .id-var .vdesc {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    margin-top: 0.25rem;
+    line-height: 1.4;
+  }
+
+  .id-var .vref {
+    font-size: 0.68rem;
+    color: #64748b;
+    margin-top: 0.2rem;
+    font-style: italic;
+  }
+
+  /* ── Domain Sections ── */
+  .section {
+    max-width: 1200px;
+    margin: 0 auto 3rem;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 2px solid var(--border);
+  }
+
+  .section-header h2 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+
+  .section-header .class-ref {
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  .section-header .count {
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: var(--muted);
+    background: var(--border);
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+
+  .card {
+    background: var(--surface);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    padding: 1rem 1.1rem 1rem;
+    border-top: 4px solid;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    transition: box-shadow 0.15s;
+  }
+
+  .card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+
+  .card-top {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .domain-code {
+    font-size: 0.95rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    padding: 0.2rem 0.55rem;
+    border-radius: 5px;
+    min-width: 3.2rem;
+    text-align: center;
+  }
+
+  .domain-name {
+    font-weight: 600;
+    font-size: 0.88rem;
+    line-height: 1.3;
+    color: var(--text);
+  }
+
+  .domain-desc {
+    font-size: 0.8rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .vars-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin-top: 0.15rem;
+  }
+
+  .vars {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+
+  .var-tag {
+    font-size: 0.69rem;
+    font-family: 'Cascadia Code', 'Consolas', monospace;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    border: 1px solid;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  /* Class color themes */
+  .events .card        { border-top-color: var(--events); }
+  .events .domain-code { background: var(--events-light); color: var(--events); }
+  .events .var-tag     { background: var(--events-light); border-color: var(--events-border); color: var(--events); }
+  .events .section-header h2 { color: var(--events); }
+  .events .legend-dot  { background: var(--events); }
+
+  .interventions .card        { border-top-color: var(--interventions); }
+  .interventions .domain-code { background: var(--interventions-light); color: var(--interventions); }
+  .interventions .var-tag     { background: var(--interventions-light); border-color: var(--interventions-border); color: var(--interventions); }
+  .interventions .section-header h2 { color: var(--interventions); }
+  .interventions .legend-dot  { background: var(--interventions); }
+
+  .findings .card        { border-top-color: var(--findings); }
+  .findings .domain-code { background: var(--findings-light); color: var(--findings); }
+  .findings .var-tag     { background: var(--findings-light); border-color: var(--findings-border); color: var(--findings); }
+  .findings .section-header h2 { color: var(--findings); }
+  .findings .legend-dot  { background: var(--findings); }
+
+  .findingsabout .card        { border-top-color: var(--findingsabout); }
+  .findingsabout .domain-code { background: var(--findingsabout-light); color: var(--findingsabout); }
+  .findingsabout .var-tag     { background: var(--findingsabout-light); border-color: var(--findingsabout-border); color: var(--findingsabout); }
+  .findingsabout .section-header h2 { color: var(--findingsabout); }
+  .findingsabout .legend-dot  { background: var(--findingsabout); }
+
+  .special .card        { border-top-color: var(--special); }
+  .special .domain-code { background: var(--special-light); color: var(--special); }
+  .special .var-tag     { background: var(--special-light); border-color: var(--special-border); color: var(--special); }
+  .special .section-header h2 { color: var(--special); }
+  .special .legend-dot  { background: var(--special); }
+
+  .trial .card        { border-top-color: var(--trial); }
+  .trial .domain-code { background: var(--trial-light); color: var(--trial); }
+  .trial .var-tag     { background: var(--trial-light); border-color: var(--trial-border); color: var(--trial); }
+  .trial .section-header h2 { color: var(--trial); }
+  .trial .legend-dot  { background: var(--trial); }
+
+  .relationship .card        { border-top-color: var(--relationship); }
+  .relationship .domain-code { background: var(--relationship-light); color: var(--relationship); }
+  .relationship .var-tag     { background: var(--relationship-light); border-color: var(--relationship-border); color: var(--relationship); }
+  .relationship .section-header h2 { color: var(--relationship); }
+  .relationship .legend-dot  { background: var(--relationship); }
+
+  footer {
+    max-width: 1200px;
+    margin: 0 auto;
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    padding-top: 1.5rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>SDTM Domain Reference Guide</h1>
+  <p>All observation classes and domains — organized by class, with key variables.</p>
+  <span class="ref">Source: SDTM Implementation Guide v3.4 (SDTMIG) · CDISC</span>
+</header>
+
+<div class="legend">
+  <div class="legend-item events"><div class="legend-dot"></div> Events</div>
+  <div class="legend-item interventions"><div class="legend-dot"></div> Interventions</div>
+  <div class="legend-item findings"><div class="legend-dot"></div> Findings</div>
+  <div class="legend-item findingsabout"><div class="legend-dot"></div> Findings About</div>
+  <div class="legend-item special"><div class="legend-dot"></div> Special Purpose</div>
+  <div class="legend-item trial"><div class="legend-dot"></div> Trial Design</div>
+  <div class="legend-item relationship"><div class="legend-dot"></div> Relationship / Supplemental</div>
+</div>
+
+<!-- ── IDENTIFIER PREFACE BANNER ── -->
+<div class="identifier-banner">
+  <h3>Identifier Variables — Present Across All Observation Domains</h3>
+  <p>
+    The following variables carry the <strong>Identifier role</strong> and appear in every observation domain
+    (Events, Interventions, Findings, Findings About). They are <strong>not repeated on individual domain cards</strong>
+    below to avoid redundancy. Domain-specific key variables shown on each card represent Topic, Result Qualifier,
+    Timing, and other distinguishing variables only. Reference: <strong>SDTMIG v3.4, Section 2.2 — Variable Roles</strong>.
+  </p>
+  <div class="id-vars">
+    <div class="id-var">
+      <span class="vname">STUDYID</span>
+      <span class="vdesc">Unique study identifier shared across all datasets in a submission.</span>
+      <span class="vref">Required · All domains</span>
+    </div>
+    <div class="id-var">
+      <span class="vname">DOMAIN</span>
+      <span class="vdesc">Two-letter domain code matching the dataset name (e.g., AE, LB, VS).</span>
+      <span class="vref">Required · All domains</span>
+    </div>
+    <div class="id-var">
+      <span class="vname">USUBJID</span>
+      <span class="vdesc">Unique subject identifier, typically STUDYID–SITEID–SUBJID concatenated.</span>
+      <span class="vref">Required · All domains</span>
+    </div>
+    <div class="id-var">
+      <span class="vname">--SEQ</span>
+      <span class="vdesc">Sequence number ensuring a unique record per subject within the domain (e.g., AESEQ, LBSEQ).</span>
+      <span class="vref">Required · All observation domains</span>
+    </div>
+    <div class="id-var">
+      <span class="vname">--GRPID</span>
+      <span class="vdesc">Optional grouping identifier linking related records within a domain (e.g., paired pre/post results).</span>
+      <span class="vref">Optional · Permissible</span>
+    </div>
+    <div class="id-var">
+      <span class="vname">--REFID</span>
+      <span class="vdesc">Optional sponsor-defined reference ID, often used for specimen or sample tracking (e.g., lab accession number).</span>
+      <span class="vref">Optional · Permissible</span>
+    </div>
+    <div class="id-var">
+      <span class="vname">--SPID</span>
+      <span class="vdesc">Optional sponsor-defined identifier mapping the record back to the original CRF or source system.</span>
+      <span class="vref">Optional · Permissible</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== EVENTS ===== -->
+<div class="section events">
+  <div class="section-header">
+    <h2>Events</h2>
+    <span class="class-ref">SDTMIG Ch. 6 · Occurrences, conditions, or incidents independent of planned study evaluations</span>
+    <span class="count">7 domains</span>
+  </div>
+  <div class="grid">
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">AE</span><span class="domain-name">Adverse Events</span></div>
+      <div class="domain-desc">Records any unfavorable medical occurrence in a subject, whether or not related to study treatment.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars">
+        <span class="var-tag">AETERM</span><span class="var-tag">AEDECOD</span><span class="var-tag">AESEV</span>
+        <span class="var-tag">AESER</span><span class="var-tag">AEREL</span><span class="var-tag">AECAT</span>
+        <span class="var-tag">AESTDTC</span><span class="var-tag">AEENDTC</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">CE</span><span class="domain-name">Clinical Events</span></div>
+      <div class="domain-desc">Protocol-defined clinical events of interest that are not adverse events (e.g., disease milestones).</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars">
+        <span class="var-tag">CETERM</span><span class="var-tag">CEDECOD</span><span class="var-tag">CECAT</span>
+        <span class="var-tag">CESTDTC</span><span class="var-tag">CEENDTC</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">DS</span><span class="domain-name">Disposition</span></div>
+      <div class="domain-desc">Captures subject disposition events such as completion, withdrawal, or death, including reasons.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars">
+        <span class="var-tag">DSTERM</span><span class="var-tag">DSDECOD</span><span class="var-tag">DSCAT</span>
+        <span class="var-tag">DSSTDTC</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">DV</span><span class="domain-name">Protocol Deviations</span></div>
+      <div class="domain-desc">Documents protocol deviations including type, description, and whether the deviation was intentional.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars">
+        <span class="var-tag">DVTERM</span><span class="var-tag">DVDECOD</span><span class="var-tag">DVCAT</span>
+        <span class="var-tag">DVSTDTC</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">HO</span><span class="domain-name">Healthcare Encounters</span></div>
+      <div class="domain-desc">Captures healthcare encounters such as hospitalizations, ER visits, or outpatient visits.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars">
+        <span class="var-tag">HOTERM</span><span class="var-tag">HODECOD</span><span class="var-tag">HOTYPE</span>
+        <span class="var-tag">HOSTDTC</span><span class="var-tag">HOENDTC</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">MH</span><span class="domain-name">Medical History</span></div>
+      <div class="domain-desc">Subject's prior and ongoing medical history at study entry, prior to the reference start date.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars">
+        <span class="var-tag">MHTERM</span><span class="var-tag">MHDECOD</span><span class="var-tag">MHCAT</span>
+        <span class="var-tag">MHSTDTC</span><span class="var-tag">MHENDTC</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">BE</span><span class="domain-name">Biospecimen Events</span></div>
+      <div class="domain-desc">Documents events related to biospecimen collection, processing, or status changes.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars">
+        <span class="var-tag">BETERM</span><span class="var-tag">BEDECOD</span><span class="var-tag">BECAT</span>
+        <span class="var-tag">BESTDTC</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== INTERVENTIONS ===== -->
+<div class="section interventions">
+  <div class="section-header">
+    <h2>Interventions</h2>
+    <span class="class-ref">SDTMIG Ch. 6 · Treatments, therapies, or agents administered to the subject</span>
+    <span class="count">8 domains</span>
+  </div>
+  <div class="grid">
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">AG</span><span class="domain-name">Procedure Agents</span></div>
+      <div class="domain-desc">Agents administered as part of a procedure (e.g., contrast media, anesthetics used during a procedure).</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars">
+        <span class="var-tag">AGTRT</span><span class="var-tag">AGDECOD</span><span class="var-tag">AGCAT</span>
+        <span class="var-tag">AGDOSE</span><span class="var-tag">AGDOSU</span><span class="var-tag">AGROUTE</span>
+        <span class="var-tag">AGSTDTC</span><span class="var-tag">AGENDTC</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">CM</span><span class="domain-name">Concomitant / Prior Medications</span></div>
+      <div class="domain-desc">Medications taken prior to or concurrently with the study treatment, not including study drug.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars">
+        <span class="var-tag">CMTRT</span><span class="var-tag">CMDECOD</span><span class="var-tag">CMCAT</span>
+        <span class="var-tag">CMDOSE</span><span class="var-tag">CMROUTE</span>
+        <span class="var-tag">CMSTDTC</span><span class="var-tag">CMENDTC</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">EC</span><span class="domain-name">Exposure as Collected</span></div>
+      <div class="domain-desc">Study treatment exposure data as originally collected before any standardization or derivation.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars">
+        <span class="var-tag">ECTRT</span><span class="var-tag">ECCAT</span><span class="var-tag">ECDOSE</span>
+        <span class="var-tag">ECROUTE</span><span class="var-tag">ECSTDTC</span><span class="var-tag">ECENDTC</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">EX</span><span class="domain-name">Exposure</span></div>
+      <div class="domain-desc">Standardized record of actual study treatment administered, derived from EC or entered directly.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars">
+        <span class="var-tag">EXTRT</span><span class="var-tag">EXCAT</span><span class="var-tag">EXDOSE</span>
+        <span class="var-tag">EXDOSU</span><span class="var-tag">EXROUTE</span>
+        <span class="var-tag">EXSTDTC</span><span class="var-tag">EXENDTC</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">ML</span><span class="domain-name">Meal Data</span></div>
+      <div class="domain-desc">Documents meals or diet consumed during the study, particularly in PK or food-effect studies.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars">
+        <span class="var-tag">MLTRT</span><span class="var-tag">MLCAT</span><span class="var-tag">MLDOSE</span>
+        <span class="var-tag">MLSTDTC</span><span class="var-tag">MLENDTC</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">PR</span><span class="domain-name">Procedures</span></div>
+      <div class="domain-desc">Medical or surgical procedures performed on subjects during or prior to the study.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars">
+        <span class="var-tag">PRTRT</span><span class="var-tag">PRDECOD</span><span class="var-tag">PRCAT</span>
+        <span class="var-tag">PRSTDTC</span><span class="var-tag">PRENDTC</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">SU</span><span class="domain-name">Substance Use</span></div>
+      <div class="domain-desc">Use of tobacco, alcohol, caffeine, or other substances recorded as a history or during study.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars">
+        <span class="var-tag">SUTRT</span><span class="var-tag">SUDECOD</span><span class="var-tag">SUCAT</span>
+        <span class="var-tag">SUSTDTC</span><span class="var-tag">SUENDTC</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">VA</span><span class="domain-name">Vaccine Administration</span></div>
+      <div class="domain-desc">Captures vaccine-specific exposure data including lot number, site of injection, and administration details.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars">
+        <span class="var-tag">VATRT</span><span class="var-tag">VADECOD</span><span class="var-tag">VACAT</span>
+        <span class="var-tag">VADOREF</span><span class="var-tag">VASTDTC</span><span class="var-tag">VAENDTC</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== FINDINGS ===== -->
+<div class="section findings">
+  <div class="section-header">
+    <h2>Findings</h2>
+    <span class="class-ref">SDTMIG Ch. 6 · Observations resulting from planned evaluations, tests, or assessments</span>
+    <span class="count">29 domains</span>
+  </div>
+  <div class="grid">
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">BS</span><span class="domain-name">Biospecimen Findings</span></div>
+      <div class="domain-desc">Results from analyses of biospecimens collected (e.g., tissue samples, biopsies).</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">BSTESTCD</span><span class="var-tag">BSTEST</span><span class="var-tag">BSCAT</span><span class="var-tag">BSORRES</span><span class="var-tag">BSSTRESC</span><span class="var-tag">BSDTC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">CP</span><span class="domain-name">Cell Phenotyping Findings</span></div>
+      <div class="domain-desc">Flow cytometry and similar cell phenotyping assay results from biospecimen analysis.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">CPTESTCD</span><span class="var-tag">CPTEST</span><span class="var-tag">CPCAT</span><span class="var-tag">CPORRES</span><span class="var-tag">CPSTRESC</span><span class="var-tag">CPDTC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">CV</span><span class="domain-name">Cardiovascular System Findings</span></div>
+      <div class="domain-desc">Cardiovascular assessments beyond ECG, such as hemodynamics or catheterization findings.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">CVTESTCD</span><span class="var-tag">CVTEST</span><span class="var-tag">CVCAT</span><span class="var-tag">CVORRES</span><span class="var-tag">CVSTRESC</span><span class="var-tag">CVDTC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">DA</span><span class="domain-name">Drug Accountability</span></div>
+      <div class="domain-desc">Tracks study drug dispensed, returned, and used to verify subject compliance.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">DATESTCD</span><span class="var-tag">DATEST</span><span class="var-tag">DACAT</span><span class="var-tag">DAORRES</span><span class="var-tag">DASTRESC</span><span class="var-tag">DADTC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">DD</span><span class="domain-name">Death Details</span></div>
+      <div class="domain-desc">Captures detailed findings about the cause and circumstances of a subject's death.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">DDTESTCD</span><span class="var-tag">DDTEST</span><span class="var-tag">DDORRES</span><span class="var-tag">DDSTRESC</span><span class="var-tag">DDDTC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">EG</span><span class="domain-name">ECG Test Results</span></div>
+      <div class="domain-desc">Electrocardiogram findings including intervals, waveforms, and overall interpretation.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">EGTESTCD</span><span class="var-tag">EGTEST</span><span class="var-tag">EGCAT</span><span class="var-tag">EGORRES</span><span class="var-tag">EGSTRESC</span><span class="var-tag">EGSTRESN</span><span class="var-tag">EGDTC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">FL</span><span class="domain-name">Subject Flags</span></div>
+      <div class="domain-desc">Protocol-defined flags or indicators for subjects, such as population membership flags.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">FLTESTCD</span><span class="var-tag">FLTEST</span><span class="var-tag">FLCAT</span><span class="var-tag">FLORRES</span><span class="var-tag">FLSTRESC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">FT</span><span class="domain-name">Functional Tests</span></div>
+      <div class="domain-desc">Results from functional assessments such as pulmonary function, exercise, or vision tests.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">FTTESTCD</span><span class="var-tag">FTTEST</span><span class="var-tag">FTCAT</span><span class="var-tag">FTORRES</span><span class="var-tag">FTSTRESC</span><span class="var-tag">FTDTC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">GF</span><span class="domain-name">Genomics Findings</span></div>
+      <div class="domain-desc">Genomic data including gene expression, sequencing, mutation, or variant findings.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">GFTESTCD</span><span class="var-tag">GFTEST</span><span class="var-tag">GFCAT</span><span class="var-tag">GFORRES</span><span class="var-tag">GFSTRESC</span><span class="var-tag">GFDTC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">IE</span><span class="domain-name">Inclusion/Exclusion Criteria Not Met</span></div>
+      <div class="domain-desc">Documents whether inclusion/exclusion criteria were met or violated at screening.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">IETESTCD</span><span class="var-tag">IETEST</span><span class="var-tag">IECAT</span><span class="var-tag">IEORRES</span><span class="var-tag">IESTRESC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">IS</span><span class="domain-name">Immunogenicity Specimen Assessments</span></div>
+      <div class="domain-desc">Antibody titer and immunogenicity assay results, common in vaccine trials.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">ISTESTCD</span><span class="var-tag">ISTEST</span><span class="var-tag">ISCAT</span><span class="var-tag">ISORRES</span><span class="var-tag">ISSTRESC</span><span class="var-tag">ISDTC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">LB</span><span class="domain-name">Laboratory Test Results</span></div>
+      <div class="domain-desc">Clinical laboratory data including chemistry, hematology, urinalysis, and other panels.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">LBTESTCD</span><span class="var-tag">LBTEST</span><span class="var-tag">LBCAT</span><span class="var-tag">LBORRES</span><span class="var-tag">LBSTRESC</span><span class="var-tag">LBSTRESN</span><span class="var-tag">LBNRIND</span><span class="var-tag">LBDTC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">MB</span><span class="domain-name">Microbiology Specimen</span></div>
+      <div class="domain-desc">Findings from microbiology cultures, organism identification, and sensitivity results.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">MBTESTCD</span><span class="var-tag">MBTEST</span><span class="var-tag">MBCAT</span><span class="var-tag">MBORRES</span><span class="var-tag">MBSTRESC</span><span class="var-tag">MBSPEC</span><span class="var-tag">MBDTC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">MI</span><span class="domain-name">Microscopic Findings</span></div>
+      <div class="domain-desc">Histopathology and microscopy results from tissue examination, common in nonclinical studies.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">MITESTCD</span><span class="var-tag">MITEST</span><span class="var-tag">MICAT</span><span class="var-tag">MIORRES</span><span class="var-tag">MISTRESC</span><span class="var-tag">MIDTC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">MK</span><span class="domain-name">Musculoskeletal System Findings</span></div>
+      <div class="domain-desc">Musculoskeletal assessments such as joint exams, range of motion, or bone density results.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">MKTESTCD</span><span class="var-tag">MKTEST</span><span class="var-tag">MKCAT</span><span class="var-tag">MKORRES</span><span class="var-tag">MKSTRESC</span><span class="var-tag">MKDTC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">MS</span><span class="domain-name">Microbiology Susceptibility</span></div>
+      <div class="domain-desc">Antimicrobial susceptibility test results (MIC, disk diffusion) paired with MB organisms.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">MSTESTCD</span><span class="var-tag">MSTEST</span><span class="var-tag">MSCAT</span><span class="var-tag">MSORRES</span><span class="var-tag">MSSTRESC</span><span class="var-tag">MSDTC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">NV</span><span class="domain-name">Nervous System Findings</span></div>
+      <div class="domain-desc">Neurological and cognitive assessments including reflex tests, nerve conduction, and neuro exams.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">NVTESTCD</span><span class="var-tag">NVTEST</span><span class="var-tag">NVCAT</span><span class="var-tag">NVORRES</span><span class="var-tag">NVSTRESC</span><span class="var-tag">NVDTC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">OE</span><span class="domain-name">Ophthalmic Examinations</span></div>
+      <div class="domain-desc">Eye exam findings including visual acuity, intraocular pressure, and funduscopic results.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">OETESTCD</span><span class="var-tag">OETEST</span><span class="var-tag">OECAT</span><span class="var-tag">OEORRES</span><span class="var-tag">OESTRESC</span><span class="var-tag">OELAT</span><span class="var-tag">OEDTC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">PC</span><span class="domain-name">Pharmacokinetics Concentrations</span></div>
+      <div class="domain-desc">Drug and metabolite concentration measurements from biological matrices (plasma, urine, etc.).</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">PCTESTCD</span><span class="var-tag">PCTEST</span><span class="var-tag">PCCAT</span><span class="var-tag">PCORRES</span><span class="var-tag">PCSTRESC</span><span class="var-tag">PCSPEC</span><span class="var-tag">PCDTC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">PE</span><span class="domain-name">Physical Examination</span></div>
+      <div class="domain-desc">Body system findings from a physical exam including normal/abnormal assessments by body system.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">PETESTCD</span><span class="var-tag">PETEST</span><span class="var-tag">PECAT</span><span class="var-tag">PEORRES</span><span class="var-tag">PESTRESC</span><span class="var-tag">PEBODSYS</span><span class="var-tag">PEDTC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">PP</span><span class="domain-name">Pharmacokinetics Parameters</span></div>
+      <div class="domain-desc">Derived PK parameters (AUC, Cmax, Tmax, t½) calculated from concentration-time data in PC.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">PPTESTCD</span><span class="var-tag">PPTEST</span><span class="var-tag">PPCAT</span><span class="var-tag">PPORRES</span><span class="var-tag">PPSTRESC</span><span class="var-tag">PPSTRESN</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">QS</span><span class="domain-name">Questionnaires</span></div>
+      <div class="domain-desc">Individual item and total score results from validated questionnaires and patient-reported outcomes.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">QSTESTCD</span><span class="var-tag">QSTEST</span><span class="var-tag">QSCAT</span><span class="var-tag">QSORRES</span><span class="var-tag">QSSTRESC</span><span class="var-tag">QSDTC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">RE</span><span class="domain-name">Respiratory System Findings</span></div>
+      <div class="domain-desc">Respiratory assessments such as spirometry, oxygen saturation, or ventilator settings.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">RETESTCD</span><span class="var-tag">RETEST</span><span class="var-tag">RECAT</span><span class="var-tag">REORRES</span><span class="var-tag">RESTRESC</span><span class="var-tag">REDTC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">RS</span><span class="domain-name">Disease Response and Clin Classification</span></div>
+      <div class="domain-desc">Tumor response or disease staging assessments (e.g., RECIST, Lugano, IMWG criteria).</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">RSTESTCD</span><span class="var-tag">RSTEST</span><span class="var-tag">RSCAT</span><span class="var-tag">RSORRES</span><span class="var-tag">RSSTRESC</span><span class="var-tag">RSDTC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">SC</span><span class="domain-name">Subject Characteristics</span></div>
+      <div class="domain-desc">Subject-level characteristics not in DM, such as disease subtype, tumor location, or functional status.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">SCTESTCD</span><span class="var-tag">SCTEST</span><span class="var-tag">SCCAT</span><span class="var-tag">SCORRES</span><span class="var-tag">SCSTRESC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">TR</span><span class="domain-name">Tumor Results</span></div>
+      <div class="domain-desc">Tumor measurement results (size, longest diameter) from imaging or physical exam per lesion.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">TRTESTCD</span><span class="var-tag">TRTEST</span><span class="var-tag">TRCAT</span><span class="var-tag">TRORRES</span><span class="var-tag">TRSTRESC</span><span class="var-tag">TRLNKID</span><span class="var-tag">TRDTC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">TU</span><span class="domain-name">Tumor/Lesion Identification</span></div>
+      <div class="domain-desc">Identifies and describes individual target, non-target, and new lesions for oncology assessments.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">TUTESTCD</span><span class="var-tag">TUTEST</span><span class="var-tag">TUCAT</span><span class="var-tag">TUORRES</span><span class="var-tag">TULNKID</span><span class="var-tag">TUDTC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">UR</span><span class="domain-name">Urinary System Findings</span></div>
+      <div class="domain-desc">Urinary tract assessments including urodynamic studies and renal function findings beyond labs.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">URTESTCD</span><span class="var-tag">URTEST</span><span class="var-tag">URCAT</span><span class="var-tag">URORRES</span><span class="var-tag">URSTRESC</span><span class="var-tag">URDTC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">VS</span><span class="domain-name">Vital Signs</span></div>
+      <div class="domain-desc">Standard vital sign measurements: blood pressure, heart rate, temperature, weight, height, BMI.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">VSTESTCD</span><span class="var-tag">VSTEST</span><span class="var-tag">VSCAT</span><span class="var-tag">VSORRES</span><span class="var-tag">VSSTRESC</span><span class="var-tag">VSSTRESN</span><span class="var-tag">VSSTRESU</span><span class="var-tag">VSDTC</span></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== FINDINGS ABOUT ===== -->
+<div class="section findingsabout">
+  <div class="section-header">
+    <h2>Findings About</h2>
+    <span class="class-ref">SDTMIG Ch. 6 · Findings that characterize or qualify events or interventions in other domains</span>
+    <span class="count">2 domains</span>
+  </div>
+  <div class="grid">
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">FA</span><span class="domain-name">Findings About Events or Interventions</span></div>
+      <div class="domain-desc">Qualitative or quantitative findings that describe or characterize events (AE, MH) or interventions (CM, EX).</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">FATESTCD</span><span class="var-tag">FATEST</span><span class="var-tag">FACAT</span><span class="var-tag">FAORRES</span><span class="var-tag">FASTRESC</span><span class="var-tag">FAOBJ</span><span class="var-tag">FADTC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">SR</span><span class="domain-name">Skin Response</span></div>
+      <div class="domain-desc">Findings about skin responses at injection or patch sites, e.g., erythema, induration grading.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">SRTESTCD</span><span class="var-tag">SRTEST</span><span class="var-tag">SRCAT</span><span class="var-tag">SRORRES</span><span class="var-tag">SRSTRESC</span><span class="var-tag">SRLOC</span><span class="var-tag">SRDTC</span></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== SPECIAL PURPOSE ===== -->
+<div class="section special">
+  <div class="section-header">
+    <h2>Special Purpose</h2>
+    <span class="class-ref">SDTMIG Ch. 5 · Subject-level and study-level data with unique structures outside observation classes</span>
+    <span class="count">7 domains</span>
+  </div>
+  <div class="grid">
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">CO</span><span class="domain-name">Comments</span></div>
+      <div class="domain-desc">Free-text comments recorded in a CRF that do not belong to another domain.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">COVAL</span><span class="var-tag">COREF</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">DM</span><span class="domain-name">Demographics</span></div>
+      <div class="domain-desc">One record per subject with baseline characteristics: age, sex, race, ethnicity, and reference dates.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">SUBJID</span><span class="var-tag">AGE</span><span class="var-tag">SEX</span><span class="var-tag">RACE</span><span class="var-tag">ETHNIC</span><span class="var-tag">ARMCD</span><span class="var-tag">RFSTDTC</span><span class="var-tag">RFENDTC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">DD</span><span class="domain-name">Death Details</span></div>
+      <div class="domain-desc">Detailed findings about cause of death; may also appear as a Findings domain in some implementations.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">DDTESTCD</span><span class="var-tag">DDTEST</span><span class="var-tag">DDORRES</span><span class="var-tag">DDDTC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">SE</span><span class="domain-name">Subject Elements</span></div>
+      <div class="domain-desc">Actual dates of subject participation in each study element as defined in the trial design (TE).</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">ETCD</span><span class="var-tag">ELEMENT</span><span class="var-tag">SESTDTC</span><span class="var-tag">SEENDTC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">SM</span><span class="domain-name">Subject Disease Milestones</span></div>
+      <div class="domain-desc">Documents disease-related milestones for each subject, such as diagnosis date or symptom onset.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">SMTESTCD</span><span class="var-tag">SMTEST</span><span class="var-tag">SMORRES</span><span class="var-tag">SMSTRESC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">SV</span><span class="domain-name">Subject Visits</span></div>
+      <div class="domain-desc">Actual dates of subject visits, providing one row per subject per visit regardless of data collected.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">VISITNUM</span><span class="var-tag">VISIT</span><span class="var-tag">SVSTDTC</span><span class="var-tag">SVENDTC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">DI</span><span class="domain-name">Device Identifiers</span></div>
+      <div class="domain-desc">Identifies devices used in the study (implants, instruments) with UDI and descriptive attributes.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">DITESTCD</span><span class="var-tag">DITEST</span><span class="var-tag">DIORRES</span></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== TRIAL DESIGN ===== -->
+<div class="section trial">
+  <div class="section-header">
+    <h2>Trial Design</h2>
+    <span class="class-ref">SDTMIG Ch. 7 · Study-level structure describing protocol design, arms, elements, and timing</span>
+    <span class="count">7 domains</span>
+  </div>
+  <div class="grid">
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">TA</span><span class="domain-name">Trial Arms</span></div>
+      <div class="domain-desc">Defines each arm of the study and the sequence of elements that subjects in that arm follow.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">ARMCD</span><span class="var-tag">ARM</span><span class="var-tag">ETCD</span><span class="var-tag">TAETORD</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">TD</span><span class="domain-name">Trial Disease Assessments</span></div>
+      <div class="domain-desc">Describes the timing and method of disease assessments planned across the study.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">TDORDER</span><span class="var-tag">TDANCVAR</span><span class="var-tag">TDMINPAI</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">TE</span><span class="domain-name">Trial Elements</span></div>
+      <div class="domain-desc">Defines the discrete periods (elements) of the study, such as Screening, Run-In, Treatment, Follow-Up.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">ETCD</span><span class="var-tag">ELEMENT</span><span class="var-tag">TESTRL</span><span class="var-tag">TEENRL</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">TI</span><span class="domain-name">Trial Inclusion/Exclusion Criteria</span></div>
+      <div class="domain-desc">Lists all protocol inclusion and exclusion criteria with a code and description for each criterion.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">IETESTCD</span><span class="var-tag">IETEST</span><span class="var-tag">IECAT</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">TM</span><span class="domain-name">Trial Disease Milestones</span></div>
+      <div class="domain-desc">Defines protocol-level disease milestones (e.g., progression, response) referenced in subject-level SM.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">MIDSTYPE</span><span class="var-tag">TMDEF</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">TS</span><span class="domain-name">Trial Summary</span></div>
+      <div class="domain-desc">Study-level summary parameters (one row each): indication, phase, blinding, number of planned subjects, etc.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">TSPARMCD</span><span class="var-tag">TSPARM</span><span class="var-tag">TSVAL</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">TV</span><span class="domain-name">Trial Visits</span></div>
+      <div class="domain-desc">Defines planned visits and their expected timing windows as specified in the study protocol.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">VISITNUM</span><span class="var-tag">VISIT</span><span class="var-tag">ARMCD</span><span class="var-tag">TVSTRL</span></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== RELATIONSHIP / SUPPLEMENTAL ===== -->
+<div class="section relationship">
+  <div class="section-header">
+    <h2>Relationship &amp; Supplemental Qualifiers</h2>
+    <span class="class-ref">SDTMIG Ch. 8 · Cross-domain linkage and non-standard variable overflow</span>
+    <span class="count">3 datasets</span>
+  </div>
+  <div class="grid">
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">SUPPQUAL</span><span class="domain-name">Supplemental Qualifiers</span></div>
+      <div class="domain-desc">Holds non-standard variables that cannot fit in the parent domain. Each SUPP-- dataset links to its parent via RDOMAIN, USUBJID, IDVAR, and IDVARVAL.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">RDOMAIN</span><span class="var-tag">IDVAR</span><span class="var-tag">IDVARVAL</span><span class="var-tag">QNAM</span><span class="var-tag">QLABEL</span><span class="var-tag">QVAL</span><span class="var-tag">QORIG</span><span class="var-tag">QEVAL</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">RELREC</span><span class="domain-name">Related Records</span></div>
+      <div class="domain-desc">Documents relationships between records in different domains, e.g., linking an AE to a CM, or a PC sample to an EX dose.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">RDOMAIN</span><span class="var-tag">IDVAR</span><span class="var-tag">IDVARVAL</span><span class="var-tag">RELTYPE</span><span class="var-tag">RELID</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><span class="domain-code">RELSUB</span><span class="domain-name">Related Subjects</span></div>
+      <div class="domain-desc">Links subjects to one another, used in family or genetic studies where subject relationships must be documented.</div>
+      <div class="vars-label">Key Variables</div>
+      <div class="vars"><span class="var-tag">USUBJID</span><span class="var-tag">SRSUBJID</span><span class="var-tag">SRRELHD</span></div>
+    </div>
+
+  </div>
+</div>
+
+<footer>
+  <p>Based on <strong>CDISC SDTM Implementation Guide v3.4 (SDTMIG)</strong> and SDTM v1.8 &nbsp;·&nbsp; Published by CDISC (Clinical Data Interchange Standards Consortium)</p>
+  <p style="margin-top:0.4rem;">Key chapters: Ch. 2 (Fundamentals &amp; Variable Roles) · Ch. 4 (SDTM Model) · Ch. 5–8 (Domain Specifications) · Appendix C (Controlled Terminology)</p>
+</footer>
+
+</body>
+</html>
